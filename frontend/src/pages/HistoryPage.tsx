@@ -74,7 +74,7 @@ export function HistoryPage() {
             <p>
               아직 추첨한 질문이 없어요.
               <br />
-              서버 추첨이 연결되면 이곳에 기록이 쌓여요.
+              캡슐을 뽑으면 이곳에 기록이 쌓여요.
             </p>
             <Link to="/gacha" className="button button-outline">
               가챠 화면 둘러보기

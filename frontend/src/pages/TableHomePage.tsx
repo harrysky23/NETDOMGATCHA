@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { useResource } from '../hooks/useResource'
-import { api } from '../services/api'
+import { api, apiMode } from '../services/api'
 import { GachaMachine } from '../components/GachaMachine'
 import { Icon } from '../components/Icon'
 import { ErrorNotice, Loading } from '../components/Feedback'
@@ -73,7 +73,7 @@ export function TableHomePage() {
             <Icon name="arrow" />
           </Link>
           <span className="panel-hint">
-            현재는 정적 목업과 예시 결과를 볼 수 있어요.
+            캡슐을 뽑으면 약 8초의 영상 뒤에 질문이 열려요.
           </span>
         </section>
         <div className="home-side">
@@ -148,13 +148,13 @@ export function TableHomePage() {
           </div>
         </div>
       </div>
-      <div className="notice mock-notice">
+      {apiMode === 'mock' && <div className="notice mock-notice">
         <Icon name="info" size={17} />
         <p>
           지금은 목업 모드예요. 질문은 이 브라우저에만 저장되며 다른 참가자와
           공유되지 않아요.
         </p>
-      </div>
+      </div>}
     </div>
   )
 }

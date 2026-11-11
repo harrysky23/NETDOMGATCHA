@@ -54,6 +54,9 @@ export type ApiErrorCode =
   | 'NO_QUESTIONS_AVAILABLE'
   | 'NOT_IMPLEMENTED'
   | 'STORAGE_UNAVAILABLE'
+  | 'NETWORK_ERROR'
+  | 'HTTP_ERROR'
+  | 'INVALID_RESPONSE'
 
 export class ApiError extends Error {
   readonly code: ApiErrorCode

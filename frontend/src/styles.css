@@ -2226,3 +2226,46 @@ fieldset {
     transform: none;
   }
 }
+
+/* Video gacha: body 포털의 native modal이 배경 메뉴와 키보드 접근을 잠급니다. */
+.gacha-poster-wrap { max-width: 300px; margin: 20px auto 18px; }
+.gacha-poster { display: block; width: 100%; max-height: 42svh; aspect-ratio: 9 / 16; object-fit: contain; border-radius: 15px; background: #231141; border: 1px solid #d5b6ff25; }
+.poster-caption { display: flex; justify-content: center; align-items: center; gap: 7px; color: #bca5d9; font-size: 6px; letter-spacing: 1.2px; margin-top: 10px; }
+.gacha-idle-title { text-align: center; font-size: 19px; font-weight: 650; letter-spacing: -.6px; }
+.gacha-idle-description { text-align: center; font-size: 11px; color: #a19db8; margin: 9px 0 22px; }
+.draw-recovery-note { padding: 12px; border: 1px solid #bba3ef30; background: #bba3ef0d; color: #cdb9ef; font-size: 11px; border-radius: 9px; margin-bottom: 15px; }
+.gacha-dialog { position: fixed; inset: 0; margin: 0; padding: 0; border: 0; width: 100%; height: 100%; height: 100dvh; max-width: none; max-height: none; overflow: hidden; color: #f6f1ff; background: #160d28; overscroll-behavior: none; }
+.gacha-dialog[open] { display: block; }
+.gacha-dialog::backdrop { background: #0a0714; }
+.gacha-cinema { position: relative; width: 100%; height: 100%; isolation: isolate; background: radial-gradient(ellipse at center, #482073, #160d28 80%); }
+.gacha-film { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; transition: opacity .7s; }
+.is-revealed .gacha-film { opacity: .35; }
+.film-status { position: absolute; z-index: 1; top: max(18px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; justify-content: center; white-space: nowrap; padding: 11px 16px; border-radius: 24px; border: 1px solid #ffffff20; background: #12091d99; backdrop-filter: blur(12px); color: #f0e4ff; font-size: 11px; }
+.gacha-light-bridge { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(ellipse, #fff 0%, #f9e7ff 40%, #e4bfff 100%); }
+.question-reveal-layer { position: absolute; z-index: 2; inset: 0; display: flex; flex-direction: column; align-items: center; padding: max(24px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; background: #100c20ab; backdrop-filter: blur(16px); }
+.question-result-card { flex-shrink: 0; width: 100%; max-width: 500px; margin: auto; padding: 38px 32px 19px; text-align: center; background: linear-gradient(145deg, #2d223fef, #191725f7); border: 1px solid #dcc0ff3d; border-radius: 26px; box-shadow: 0 25px 100px #0a061480, 0 0 70px #bc8dff0d; }
+.question-result-card .result-sparkle { display: block; margin-bottom: 24px; font-size: 53px; }
+.question-result-card .target-badge { margin-top: 23px; }
+.question-result-card h2 { margin: 22px 0 0; color: #f5eaff; font-size: clamp(21px, 4.5vw, 29px); font-weight: 650; line-height: 1.7; letter-spacing: -.8px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; outline: none; }
+.question-result-card .result-divider { margin: 26px auto 0; }
+.question-result-card > p { margin-top: 18px; font-size: 12px; color: #c5b6d5; }
+.question-result-card > small { display: block; font-size: 10px; margin-top: 10px; color: #aa98bc; }
+.question-result-card .result-recovered { font-size: 11px; color: #c5acec; }
+.question-result-card .result-warning { font-size: 11px; color: #ffced8; }
+.result-actions { margin-top: 30px; }
+.film-fallback { position: absolute; z-index: 4; inset: 0; display: flex; padding: 24px; background: #110c23c9; backdrop-filter: blur(12px); overflow-y: auto; }
+.film-fallback-card { width: 100%; max-width: 410px; margin: auto; text-align: center; background: #211a31; border: 1px solid #d2b1fa35; border-radius: 22px; padding: 30px 25px 18px; }
+.film-fallback-card > svg { color: #d0b4f7; margin: 0 auto 17px; }
+.film-fallback-card h2 { font-size: 22px; font-weight: 650; }
+.film-fallback-card p { margin: 14px 0 25px; font-size: 12px; color: #beb0d0; }
+@media (max-width: 540px) {
+  .gacha-video-panel { padding: 18px 20px 20px; }
+  .gacha-poster-wrap { max-width: 235px; margin-top: 18px; }
+  .gacha-poster { max-height: 42svh; }
+  .gacha-idle-title { font-size: 17px; }
+  .gacha-idle-description { font-size: 10px; }
+  .question-result-card { padding: 30px 23px 16px; border-radius: 22px; }
+  .question-result-card .result-sparkle { font-size: 46px; margin-bottom: 20px; }
+  .question-result-card .eyebrow { font-size: 7px; letter-spacing: 1.7px; }
+  .question-result-card > p { font-size: 11px; }
+}

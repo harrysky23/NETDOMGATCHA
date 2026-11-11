@@ -105,16 +105,25 @@ test('테이블 변경 시 ID/토큰 유지, 변경된 세션의 이전 테이�
   )
 })
 
-test('실제 추첨은 실행하지 않고 질문 수/기록을 변경하지 않음', async () => {
+test('목업 추첨은 같은 멱등 키에 같은 결과를 반환하고 한 번만 차감', async () => {
   const session = await enter()
   const before = await mockApi.getStatus(session, TABLES[0].id)
-  await assert.rejects(
-    mockApi.draw(session, TABLES[0].id, 'same-key'),
-    hasCode('NOT_IMPLEMENTED'),
-  )
-  assert.deepEqual(await mockApi.getStatus(session, TABLES[0].id), before)
-  assert.deepEqual(await mockApi.getHistory(session, TABLES[0].id), [])
-  assert.equal(await mockApi.getLatestDraw(session, TABLES[0].id), null)
+  const first = await mockApi.draw(session, TABLES[0].id, 'same-key')
+  const retry = await mockApi.draw(session, TABLES[0].id, 'same-key')
+  assert.deepEqual(retry, first)
+  assert.equal((await mockApi.getStatus(session, TABLES[0].id)).remaining_count, before.remaining_count - 1)
+  assert.deepEqual(await mockApi.getHistory(session, TABLES[0].id), [first])
+  assert.deepEqual(await mockApi.getLatestDraw(session, TABLES[0].id), first)
+})
+
+test('목업 질문 소진·중복 방지와 다른 테이블 추첨 분리', async () => {
+  const one = await enter()
+  const two = await enter(1)
+  const results = await Promise.all(Array.from({length: 12}, (_, index) => mockApi.draw(one, TABLES[0].id, `draw-${index}`)))
+  assert.equal(new Set(results.map(draw => draw.question.id)).size, 12)
+  assert.equal((await mockApi.getStatus(one, TABLES[0].id)).remaining_count, 0)
+  await assert.rejects(mockApi.draw(one, TABLES[0].id, 'one-more'), hasCode('NO_QUESTIONS_AVAILABLE'))
+  assert.equal((await mockApi.getStatus(two, TABLES[1].id)).remaining_count, 12)
 })
 
 test('손상된 저장 데이터는 안전하게 기본값으로 복원', async () => {

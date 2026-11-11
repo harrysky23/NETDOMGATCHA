@@ -1,5 +1,7 @@
 import type { NetApi } from './contracts'
 import { mockApi } from './mockApi'
+import { createHttpApi } from './httpApi'
 
-// Phase 2: 같은 계약을 구현하는 HTTP 어댑터로 이 주입 지점만 교체합니다.
-export const api: NetApi = mockApi
+export const apiMode = import.meta.env.VITE_API_MODE === 'http' ? 'http' : 'mock'
+export const api: NetApi = apiMode === 'http'
+  ? createHttpApi(import.meta.env.VITE_API_BASE_URL || '/api') : mockApi

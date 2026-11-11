@@ -1,26 +1,17 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { ParticipantSession } from '../types'
 import { readStorage, writeStorage } from '../services/storage'
-import { api } from '../services/api'
+import { api, apiMode } from '../services/api'
+import { isParticipantSession } from '../services/validation'
 
-const SESSION_KEY = 'net:session:v1'
+const SESSION_KEY = apiMode === 'http' ? 'net:session:http:v1' : 'net:session:v1'
 const DRAFT_KEY = 'net:nickname:v1'
 
 function isSession(value: unknown): value is ParticipantSession {
-  if (!value || typeof value !== 'object') return false
-  const session = value as Partial<ParticipantSession>
-  return (
-    typeof session.token === 'string' &&
-    session.token.startsWith('mock-') &&
-    !!session.participant &&
-    typeof session.participant.id === 'string' &&
-    typeof session.participant.nickname === 'string' &&
-    !!session.participant.nickname.trim() &&
-    Array.from(session.participant.nickname).length <= 12 &&
-    /^00000000-0000-4000-8000-00000000000[1-5]$/.test(
-      session.participant.table_id,
-    )
-  )
+  // 형식 검사만 수행합니다. 실제 토큰·소속 검증은 매 API 요청에서 서버가 수행합니다.
+  return isParticipantSession(value) && (apiMode === 'http'
+    ? !value.token.startsWith('mock-')
+    : value.token.startsWith('mock-') && /^00000000-0000-4000-8000-00000000000[1-5]$/.test(value.participant.table_id))
 }
 
 interface SessionContextValue {

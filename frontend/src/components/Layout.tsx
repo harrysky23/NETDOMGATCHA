@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useSession } from '../hooks/useSession'
 import { Icon } from './Icon'
+import { apiMode } from '../services/api'
 
 export function Layout() {
   const { session } = useSession()
@@ -78,7 +79,7 @@ export function Layout() {
           <b>NET.</b> 경희대학교 컴퓨터공학과
         </span>
         <span>선배와 후배, 그 사이의 연결.</span>
-        <span className="mock-label">PHASE 01 · 목업 미리보기</span>
+        <span className="mock-label">{apiMode === 'mock' ? 'MOCK MODE · 영상 가챠' : 'NET CAPSULE CLUB'}</span>
       </footer>
       {showNav && (
         <nav className="mobile-nav" aria-label="주요 메뉴">
@@ -137,8 +138,7 @@ export function Layout() {
             </li>
           </ol>
           <p className="muted small">
-            현재는 목업 버전으로, 이 브라우저에만 저장돼요. 실제 추첨과 다른
-            기기 간 공유는 서버 연동 후 제공됩니다.
+            {apiMode === 'mock' ? '현재는 목업 질문함으로, 질문과 추첨 기록은 이 브라우저에만 저장돼요. 실제 무작위 추첨과 다른 기기 간 공유는 서버 연동 후 제공됩니다.' : '우리 테이블의 질문함을 함께 사용해요. 추첨한 질문은 기록에서 다시 확인할 수 있어요.'}
           </p>
           <button
             className="button button-primary w-full mt-6"
