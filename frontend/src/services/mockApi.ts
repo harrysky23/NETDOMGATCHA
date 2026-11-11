@@ -9,6 +9,7 @@ import {
 } from '../types/index.ts'
 import { readStorage, writeStorage } from './storage.ts'
 import { isDrawResult } from './validation.ts'
+import { getMockTables, INITIAL_TABLES } from './tableStore.ts'
 
 interface MockDrawReceipt {
   idempotencyKey: string
@@ -17,17 +18,24 @@ interface MockDrawReceipt {
 }
 
 function readDraws(tableId: string): MockDrawReceipt[] {
-  return readStorage(`net:mock:draws:v1:${tableId}`, (value): value is MockDrawReceipt[] =>
-    Array.isArray(value) && value.every(item => item && typeof item.idempotencyKey === 'string'
-      && typeof item.participantId === 'string' && isDrawResult(item.result)
-      && item.result.table_id === tableId)) ?? []
+  return (
+    readStorage(
+      `net:mock:draws:v1:${tableId}`,
+      (value): value is MockDrawReceipt[] =>
+        Array.isArray(value) &&
+        value.every(
+          (item) =>
+            item &&
+            typeof item.idempotencyKey === 'string' &&
+            typeof item.participantId === 'string' &&
+            isDrawResult(item.result) &&
+            item.result.table_id === tableId,
+        ),
+    ) ?? []
+  )
 }
 
-export const TABLES: EventTable[] = Array.from({ length: 5 }, (_, index) => ({
-  id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
-  number: index + 1,
-  name: `TABLE ${String(index + 1).padStart(2, '0')}`,
-}))
+export const TABLES: EventTable[] = INITIAL_TABLES
 
 const SEEDS: { content: string; target: QuestionTarget }[] = [
   { content: 'NET에서 가장 기억에 남는 순간은 언제인가요?', target: 'all' },
@@ -45,7 +53,7 @@ const SEEDS: { content: string; target: QuestionTarget }[] = [
 ]
 
 function tableById(id: string) {
-  const table = TABLES.find((table) => table.id === id)
+  const table = getMockTables().find((table) => table.id === id)
   if (!table)
     throw new ApiError('TABLE_NOT_FOUND', '존재하지 않는 테이블이에요.')
   return table
@@ -97,7 +105,7 @@ function readQuestions(tableId: string) {
 
 export const mockApi: NetApi = {
   async listTables() {
-    return TABLES.map((table) => ({ ...table }))
+    return getMockTables()
   },
   async createParticipant({ nickname, table_id }) {
     tableById(table_id)
@@ -120,8 +128,12 @@ export const mockApi: NetApi = {
   async getStatus(session, tableId) {
     checkAccess(session, tableId)
     const questions = readQuestions(tableId)
-    const drawnIds = new Set(readDraws(tableId).map(draw => draw.result.question.id))
-    const remaining = questions.filter((q) => !q.is_drawn && !drawnIds.has(q.id)).length
+    const drawnIds = new Set(
+      readDraws(tableId).map((draw) => draw.result.question.id),
+    )
+    const remaining = questions.filter(
+      (q) => !q.is_drawn && !drawnIds.has(q.id),
+    ).length
     return {
       table: tableById(tableId),
       remaining_count: remaining,
@@ -158,26 +170,50 @@ export const mockApi: NetApi = {
   },
   async draw(session, tableId, idempotencyKey) {
     checkAccess(session, tableId)
-    if (!idempotencyKey.trim()) throw new ApiError('VALIDATION_ERROR', '추첨 요청 키가 필요해요.')
+    if (!idempotencyKey.trim())
+      throw new ApiError('VALIDATION_ERROR', '추첨 요청 키가 필요해요.')
     const draws = readDraws(tableId)
-    const previous = draws.find(draw => draw.idempotencyKey === idempotencyKey && draw.participantId === session.participant.id)
+    const previous = draws.find(
+      (draw) =>
+        draw.idempotencyKey === idempotencyKey &&
+        draw.participantId === session.participant.id,
+    )
     if (previous) return previous.result
-    const drawnIds = new Set(draws.map(draw => draw.result.question.id))
+    const drawnIds = new Set(draws.map((draw) => draw.result.question.id))
     // 목업은 순서대로 선택합니다. 실제 무작위 추첨·원자적 처리는 FastAPI/PostgreSQL 책임입니다.
-    const question = readQuestions(tableId).find(question => !question.is_drawn && !drawnIds.has(question.id))
-    if (!question) throw new ApiError('NO_QUESTIONS_AVAILABLE', '우리 테이블의 질문을 모두 뽑았어요. 새 질문을 남겨 주세요.')
-    const result: DrawResult = { id: crypto.randomUUID(), table_id: tableId,
-      question: { ...question, is_drawn: true }, drawn_at: new Date().toISOString() }
+    const question = readQuestions(tableId).find(
+      (question) => !question.is_drawn && !drawnIds.has(question.id),
+    )
+    if (!question)
+      throw new ApiError(
+        'NO_QUESTIONS_AVAILABLE',
+        '우리 테이블의 질문을 모두 뽑았어요. 새 질문을 남겨 주세요.',
+      )
+    const result: DrawResult = {
+      id: crypto.randomUUID(),
+      table_id: tableId,
+      question: { ...question, is_drawn: true },
+      drawn_at: new Date().toISOString(),
+    }
     // 추첨·멱등 결과를 하나의 저장값으로 기록하여 부분 저장을 피합니다.
-    writeStorage(`net:mock:draws:v1:${tableId}`, [...draws, { idempotencyKey, participantId: session.participant.id, result }])
+    writeStorage(`net:mock:draws:v1:${tableId}`, [
+      ...draws,
+      { idempotencyKey, participantId: session.participant.id, result },
+    ])
     return result
   },
   async getHistory(session, tableId) {
     checkAccess(session, tableId)
-    return readDraws(tableId).map(draw => draw.result).reverse()
+    return readDraws(tableId)
+      .map((draw) => draw.result)
+      .reverse()
   },
   async getLatestDraw(session, tableId) {
     checkAccess(session, tableId)
-    return readDraws(tableId).filter(draw => draw.participantId === session.participant.id).at(-1)?.result ?? null
+    return (
+      readDraws(tableId)
+        .filter((draw) => draw.participantId === session.participant.id)
+        .at(-1)?.result ?? null
+    )
   },
 }

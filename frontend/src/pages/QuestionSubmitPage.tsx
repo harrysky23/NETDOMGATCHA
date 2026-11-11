@@ -1,30 +1,29 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, apiMode } from '../services/api'
 import { useSession } from '../hooks/useSession'
 import { TARGET_LABELS, type QuestionTarget } from '../types'
-import { PageHeading } from '../components/PageHeading'
 import { Icon } from '../components/Icon'
 import { ErrorNotice } from '../components/Feedback'
 
-const targets: { value: QuestionTarget; symbol: string; subtitle: string }[] = [
-  { value: 'senior', symbol: '↗', subtitle: '경험이 궁금해요' },
-  { value: 'junior', symbol: '↘', subtitle: '요즘이 궁금해요' },
-  { value: 'all', symbol: '✳', subtitle: '함께 나누고 싶어요' },
-]
-
 export function QuestionSubmitPage() {
-  const { session } = useSession()
+  const { nickname, selectedTableId, ensureParticipant } = useSession()
+  const [name, setName] = useState(nickname)
   const [content, setContent] = useState('')
   const [target, setTarget] = useState<QuestionTarget>('all')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [savedContent, setSavedContent] = useState('')
   const busy = useRef(false)
   const textarea = useRef<HTMLTextAreaElement>(null)
   const count = Array.from(content).length
-  const valid = !!content.trim() && count <= 200
+  const nameCount = Array.from(name.trim()).length
+  const valid =
+    !!selectedTableId &&
+    nameCount > 0 &&
+    nameCount <= 12 &&
+    !!content.trim() &&
+    count <= 200
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -33,19 +32,18 @@ export function QuestionSubmitPage() {
     setPending(true)
     setError('')
     try {
-      const question = await api.submitQuestion(
-        session!,
-        session!.participant.table_id,
-        { content, target },
-      )
-      setSavedContent(question.content)
+      const participant = await ensureParticipant(selectedTableId, name)
+      await api.submitQuestion(participant, selectedTableId, {
+        content,
+        target,
+      })
       setContent('')
       setSuccess(true)
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : '질문을 담지 못했어요. 다시 시도해 주세요.',
+          : '질문을 넣지 못했어요. 다시 시도해 주세요.',
       )
     } finally {
       busy.current = false
@@ -53,125 +51,142 @@ export function QuestionSubmitPage() {
     }
   }
 
-  function writeAgain() {
-    setSuccess(false)
-    setSavedContent('')
-    setTarget('all')
-    requestAnimationFrame(() => textarea.current?.focus())
-  }
-
   return (
-    <div className="container form-width">
-      <PageHeading
-        eyebrow="LEAVE A LITTLE QUESTION"
-        title="어떤 이야기가 궁금한가요?"
-        description="작은 호기심 하나가, 뜻밖의 이야기를 꺼내줄 거예요."
-      />
+    <div className="simple-form-page">
+      <Link to="/" className="back-link">
+        <Icon name="back" size={17} />
+        머신으로
+      </Link>
       {success ? (
-        <section className="success-panel" aria-labelledby="success-title">
+        <section className="simple-submit-success">
           <div className="success-icon">
             <Icon name="check" size={32} />
           </div>
-          <span className="eyebrow">QUESTION DELIVERED</span>
-          <h2 id="success-title" role="status">
-            질문함에 마음을 담았어요!
-          </h2>
-          <p>우리 테이블의 다음 이야기가 될지도 몰라요.</p>
-          <blockquote>{savedContent}</blockquote>
-          <p className="small muted">이 브라우저의 목업 질문함에 저장했어요.</p>
+          <h1 role="status">질문을 넣었어요!</h1>
+          <p>우리 테이블의 다음 이야기가 될 거예요.</p>
           <button
-            className="button button-primary w-full mt-6"
-            onClick={writeAgain}
+            className="button button-primary w-full"
+            onClick={() => {
+              setSuccess(false)
+              setTarget('all')
+              requestAnimationFrame(() => textarea.current?.focus())
+            }}
           >
+            하나 더 넣기
             <Icon name="pen" size={18} />
-            질문 하나 더 남기기
           </button>
-          <Link to="/table" className="button button-ghost w-full">
-            테이블로 돌아가기
-            <Icon name="arrow" size={17} />
+          <Link to="/" className="button button-ghost w-full">
+            머신으로 돌아가기
           </Link>
         </section>
       ) : (
-        <form className="question-form" onSubmit={submit}>
-          <fieldset disabled={pending}>
-            <legend>누구에게 묻고 싶나요?</legend>
-            <div className="target-grid">
-              {targets.map((item) => (
-                <label
-                  key={item.value}
-                  className={`target-option ${target === item.value ? 'selected' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="target"
-                    value={item.value}
-                    checked={target === item.value}
-                    onChange={() => setTarget(item.value)}
-                  />
-                  <span className="target-symbol">{item.symbol}</span>
-                  <strong>{TARGET_LABELS[item.value]}</strong>
-                  <small>{item.subtitle}</small>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <div className="question-label">
-            <label htmlFor="question-content">질문을 남겨 주세요</label>
-            <span>
-              <Icon name="lock" size={13} />
-              익명으로 전달돼요
-            </span>
-          </div>
-          <div className={`textarea-wrap ${count > 200 ? 'invalid' : ''}`}>
-            <textarea
-              ref={textarea}
-              id="question-content"
-              name="question"
-              placeholder={
-                '예를 들면,\nNET에서 가장 기억에 남는 순간은 언제인가요?'
-              }
-              value={content}
-              onChange={(event) => {
-                setContent(event.target.value)
-                setError('')
-              }}
-              required
-              disabled={pending}
-              aria-describedby="question-hint question-count"
-              aria-invalid={count > 200}
-            />
-            <span
-              className={count > 200 ? 'text-error' : ''}
-              id="question-count"
-            >
-              {count}
-              <span> / 200</span>
-            </span>
-          </div>
-          <p className="field-hint" id="question-hint">
-            1–200자로 작성해 주세요. 서로를 배려하는 질문을 부탁드려요.
+        <>
+          <h1>질문 넣기</h1>
+          <p className="simple-form-intro">
+            이름만 알려주고, 궁금한 이야기를 남겨 주세요.
           </p>
-          {error && <ErrorNotice message={error} />}
-          <button
-            type="submit"
-            className="button button-primary w-full"
-            disabled={!valid || pending}
-          >
-            {pending ? (
-              <>
-                <span className="spinner" />
-                질문을 담는 중...
-              </>
-            ) : (
-              <>
-                <Icon name="pen" size={18} />
-                질문함에 담기
-                <Icon name="arrow" size={19} />
-              </>
+          <form className="simple-question-form" onSubmit={submit}>
+            <fieldset disabled={pending} className="simple-form-fields">
+              <div>
+                <label htmlFor="submit-nickname" className="simple-field-label">
+                  닉네임
+                </label>
+                <input
+                  id="submit-nickname"
+                  className="simple-input"
+                  autoComplete="nickname"
+                  value={name}
+                  required
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="어떤 이름으로 남길까요?"
+                  aria-describedby="submit-name-hint"
+                  aria-invalid={nameCount > 12}
+                />
+                <p className="field-hint" id="submit-name-hint">
+                  1–12자 · 질문에는 이름이 표시되지 않아요.
+                </p>
+              </div>
+              <fieldset>
+                <legend className="simple-field-label">누구에게?</legend>
+                <div className="simple-targets">
+                  {(['senior', 'junior', 'all'] as QuestionTarget[]).map(
+                    (value) => (
+                      <label
+                        className={target === value ? 'selected' : ''}
+                        key={value}
+                      >
+                        <input
+                          type="radio"
+                          name="target"
+                          value={value}
+                          checked={target === value}
+                          onChange={() => setTarget(value)}
+                        />
+                        {TARGET_LABELS[value]}
+                      </label>
+                    ),
+                  )}
+                </div>
+              </fieldset>
+              <div>
+                <label
+                  htmlFor="question-content"
+                  className="simple-field-label"
+                >
+                  질문
+                </label>
+                <div
+                  className={`textarea-wrap ${count > 200 ? 'invalid' : ''}`}
+                >
+                  <textarea
+                    ref={textarea}
+                    id="question-content"
+                    placeholder="평소 궁금했던 이야기를 적어 주세요."
+                    value={content}
+                    onChange={(event) => setContent(event.target.value)}
+                    required
+                    aria-describedby="simple-question-hint"
+                    aria-invalid={count > 200}
+                  />
+                  <span className={count > 200 ? 'text-error' : ''}>
+                    {count} / 200
+                  </span>
+                </div>
+                <p className="field-hint" id="simple-question-hint">
+                  1–200자로 작성해 주세요.
+                </p>
+              </div>
+            </fieldset>
+            {!selectedTableId && (
+              <p className="simple-recovery">
+                상단에서 테이블을 먼저 선택해 주세요.
+              </p>
             )}
-          </button>
-          <p className="form-privacy">작성자 정보는 질문에 표시되지 않아요.</p>
-        </form>
+            {error && <ErrorNotice message={error} />}
+            <button
+              className="button button-primary w-full"
+              type="submit"
+              disabled={!valid || pending}
+            >
+              {pending ? (
+                <>
+                  <span className="spinner" />
+                  넣는 중…
+                </>
+              ) : (
+                <>
+                  질문 넣기
+                  <Icon name="arrow" size={18} />
+                </>
+              )}
+            </button>
+            {apiMode === 'mock' && (
+              <p className="simple-bottom-note">
+                이 브라우저의 목업 질문함에 저장돼요.
+              </p>
+            )}
+          </form>
+        </>
       )}
     </div>
   )

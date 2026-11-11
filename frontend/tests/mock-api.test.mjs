@@ -20,13 +20,13 @@ const enter = (table = 0, nickname = 'NET') =>
   mockApi.createParticipant({ nickname, table_id: TABLES[table].id })
 const hasCode = (code) => (error) => error.code === code
 
-test('정확히 5개 고정 테이블과 독립적인 반환값', async () => {
+test('초기 3개 테이블과 독립적인 반환값', async () => {
   const tables = await mockApi.listTables()
   assert.deepEqual(
     tables.map((t) => t.name),
-    ['TABLE 01', 'TABLE 02', 'TABLE 03', 'TABLE 04', 'TABLE 05'],
+    ['TABLE 01', 'TABLE 02', 'TABLE 03'],
   )
-  assert.equal(new Set(tables.map((t) => t.id)).size, 5)
+  assert.equal(new Set(tables.map((t) => t.id)).size, 3)
   tables[0].name = '변경 시도'
   assert.equal((await mockApi.listTables())[0].name, 'TABLE 01')
 })
@@ -81,12 +81,12 @@ test('질문 1자/200자/공백/201자/잘못된 대상 경계 검증', async ()
 
 test('테이블 변경 시 ID/토큰 유지, 변경된 세션의 이전 테이블 접근 차단', async () => {
   const original = await enter()
-  const moved = await mockApi.changeTable(original, TABLES[4].id)
+  const moved = await mockApi.changeTable(original, TABLES[2].id)
   assert.equal(moved.participant.id, original.participant.id)
   assert.equal(moved.token, original.token)
   assert.equal(
-    (await mockApi.getStatus(moved, TABLES[4].id)).table.name,
-    'TABLE 05',
+    (await mockApi.getStatus(moved, TABLES[2].id)).table.name,
+    'TABLE 03',
   )
   await assert.rejects(
     mockApi.getStatus(moved, TABLES[0].id),
@@ -111,7 +111,10 @@ test('목업 추첨은 같은 멱등 키에 같은 결과를 반환하고 한 �
   const first = await mockApi.draw(session, TABLES[0].id, 'same-key')
   const retry = await mockApi.draw(session, TABLES[0].id, 'same-key')
   assert.deepEqual(retry, first)
-  assert.equal((await mockApi.getStatus(session, TABLES[0].id)).remaining_count, before.remaining_count - 1)
+  assert.equal(
+    (await mockApi.getStatus(session, TABLES[0].id)).remaining_count,
+    before.remaining_count - 1,
+  )
   assert.deepEqual(await mockApi.getHistory(session, TABLES[0].id), [first])
   assert.deepEqual(await mockApi.getLatestDraw(session, TABLES[0].id), first)
 })
@@ -119,10 +122,17 @@ test('목업 추첨은 같은 멱등 키에 같은 결과를 반환하고 한 �
 test('목업 질문 소진·중복 방지와 다른 테이블 추첨 분리', async () => {
   const one = await enter()
   const two = await enter(1)
-  const results = await Promise.all(Array.from({length: 12}, (_, index) => mockApi.draw(one, TABLES[0].id, `draw-${index}`)))
-  assert.equal(new Set(results.map(draw => draw.question.id)).size, 12)
+  const results = await Promise.all(
+    Array.from({ length: 12 }, (_, index) =>
+      mockApi.draw(one, TABLES[0].id, `draw-${index}`),
+    ),
+  )
+  assert.equal(new Set(results.map((draw) => draw.question.id)).size, 12)
   assert.equal((await mockApi.getStatus(one, TABLES[0].id)).remaining_count, 0)
-  await assert.rejects(mockApi.draw(one, TABLES[0].id, 'one-more'), hasCode('NO_QUESTIONS_AVAILABLE'))
+  await assert.rejects(
+    mockApi.draw(one, TABLES[0].id, 'one-more'),
+    hasCode('NO_QUESTIONS_AVAILABLE'),
+  )
   assert.equal((await mockApi.getStatus(two, TABLES[1].id)).remaining_count, 12)
 })
 

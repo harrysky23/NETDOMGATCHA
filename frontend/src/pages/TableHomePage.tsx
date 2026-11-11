@@ -148,13 +148,15 @@ export function TableHomePage() {
           </div>
         </div>
       </div>
-      {apiMode === 'mock' && <div className="notice mock-notice">
-        <Icon name="info" size={17} />
-        <p>
-          지금은 목업 모드예요. 질문은 이 브라우저에만 저장되며 다른 참가자와
-          공유되지 않아요.
-        </p>
-      </div>}
+      {apiMode === 'mock' && (
+        <div className="notice mock-notice">
+          <Icon name="info" size={17} />
+          <p>
+            지금은 목업 모드예요. 질문은 이 브라우저에만 저장되며 다른 참가자와
+            공유되지 않아요.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

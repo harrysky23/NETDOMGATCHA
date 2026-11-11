@@ -1,41 +1,177 @@
+import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
-import { Link } from 'react-router-dom'
-import { PageHeading } from '../components/PageHeading'
-import { Icon } from '../components/Icon'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ErrorNotice } from '../components/Feedback'
 import { GachaExperience } from '../components/gacha/GachaExperience'
+import { MachineFrame } from '../components/gacha/MachineFrame'
+import { MachineHotspots } from '../components/gacha/MachineHotspots'
+import { QuestionSheet } from '../components/gacha/QuestionSheet'
 import { useSession } from '../hooks/useSession'
 import { useGachaDraw } from '../hooks/useGachaDraw'
-import { useResource } from '../hooks/useResource'
-import { api, apiMode } from '../services/api'
+import { apiMode } from '../services/api'
+import { readStorage, writeStorage } from '../services/storage'
 import videoSrc from '../assets/gacha.mp4'
 import poster from '../assets/gacha-poster.jpg'
+import '../components/gacha/machine-ui.css'
+
+const HINT_KEY = 'net:machine:hints-seen:v1'
 
 export function GachaPage() {
-  const { session } = useSession()
+  const { session, selectedTableId, ensureParticipant, pending } = useSession()
   const reduceMotion = useReducedMotion()
-  const draw = useGachaDraw(session!)
-  const loadStatus = useCallback(() => api.getStatus(session!, session!.participant.table_id), [session])
-  const { data: status, refresh } = useResource(loadStatus)
-  useEffect(() => { if (draw.phase === 'REVEAL') void refresh() }, [draw.phase, refresh])
-  const busy = draw.phase !== 'IDLE'
+  const draw = useGachaDraw(session)
+  const [joining, setJoining] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [showHints, setShowHints] = useState(
+    () =>
+      !readStorage(
+        HINT_KEY,
+        (value): value is boolean => typeof value === 'boolean',
+      ),
+  )
+  const gate = useRef(false)
+  const drawButton = useRef<HTMLButtonElement>(null)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const busy = joining || pending || draw.phase !== 'IDLE' || sheetOpen
 
-  return <div className="container form-width gacha-page">
-    <PageHeading eyebrow="ONE CAPSULE, ONE CONNECTION" title="우리의 다음 이야기는?" description="작은 캡슐에 담긴 질문을 함께 만나보세요." />
-    <section className="gacha-panel gacha-video-panel" aria-busy={draw.phase === 'REQUESTING'}>
-      <div className="machine-panel-header"><span className="pill"><span className="status-dot" />{status?.table.name ?? '우리 테이블'}</span><span className="preview-badge">{apiMode === 'mock' ? '목업 추첨' : `남은 질문 ${status?.remaining_count ?? '…'}개`}</span></div>
-      <div className="gacha-poster-wrap"><img className="gacha-poster" src={poster} alt="보라색 캡슐이 담긴 NET:WORK 가챠 머신" fetchPriority="high" /><div className="poster-caption"><Icon name="sparkles" size={15} /><span>A LITTLE QUESTION. A NEW CONNECTION.</span></div></div>
-      <h2 className="gacha-idle-title">어떤 질문을 만나게 될까요?</h2>
-      <p className="gacha-idle-description">뽑기를 누르면 우리 테이블의 이야기가 열려요.</p>
-      {draw.recovering && !draw.result && <p className="draw-recovery-note" role="status">이전 요청이 남아 있어요. 같은 요청으로 결과를 확인해요.</p>}
-      {draw.error && <ErrorNotice message={draw.error} />}
-      <button className="button button-primary w-full" disabled={busy} onClick={() => { void draw.start(!!reduceMotion) }}>
-        {draw.phase === 'REQUESTING' ? <><span className="spinner" />질문을 뽑고 있어요…</> : <><Icon name={draw.error || draw.recovering ? 'refresh' : 'sparkles'} />{draw.error || draw.recovering ? '같은 추첨 요청 다시 확인' : '캡슐 뽑기'}<Icon name="arrow" size={18} /></>}
-      </button>
-      <p className="panel-hint">{apiMode === 'mock' ? '지금은 이 브라우저의 목업 질문함을 사용해요.' : '추첨한 질문은 우리 테이블 기록에 보관돼요.'}<br />{reduceMotion ? '동작 줄이기 설정에 따라 영상 없이 질문을 보여드려요.' : '약 8초의 영상이 끝나면 질문이 공개돼요. 기본은 무음이에요.'}</p>
+  function checkTable() {
+    if (selectedTableId) return true
+    setError('상단에서 우리 테이블을 선택해 주세요.')
+    document.getElementById('event-table')?.focus()
+    return false
+  }
+
+  function dismissHints() {
+    setShowHints(false)
+    try {
+      writeStorage(HINT_KEY, true)
+    } catch {
+      /* 안내 표시 여부는 추첨에 영향을 주지 않습니다. */
+    }
+  }
+
+  async function start() {
+    if (gate.current || busy || !checkTable()) return
+    gate.current = true
+    setJoining(true)
+    setError('')
+    dismissHints()
+    try {
+      const participant = await ensureParticipant(selectedTableId)
+      await draw.start(participant, !!reduceMotion)
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : '시작하지 못했어요. 다시 시도해 주세요.',
+      )
+    } finally {
+      gate.current = false
+      setJoining(false)
+    }
+  }
+
+  function openQuestion() {
+    if (busy || !checkTable()) return
+    setError('')
+    dismissHints()
+    setSheetOpen(true)
+  }
+
+  useEffect(() => {
+    const state = location.state as { openQuestionSheet?: boolean } | null
+    if (!state?.openQuestionSheet) return
+    // 기존 /questions 직접 접근도 머신 위의 바텀 시트로 이어집니다.
+    if (selectedTableId) setSheetOpen(true)
+    else {
+      setError('상단에서 우리 테이블을 선택해 주세요.')
+      document.getElementById('event-table')?.focus()
+    }
+    navigate('/', { replace: true, state: null })
+  }, [location.state, selectedTableId, navigate])
+
+  useEffect(() => {
+    if (!success) return
+    const timeout = window.setTimeout(() => setSuccess(false), 3200)
+    return () => window.clearTimeout(timeout)
+  }, [success])
+
+  return (
+    <section className="machine-screen" aria-label="NET 캡슐 가챠">
+      <h1 className="sr-only">
+        NET 캡슐 가챠 — 손잡이로 뽑고 보관통으로 질문 넣기
+      </h1>
+      <MachineFrame>
+        {(size) => (
+          <>
+            <img
+              className="machine-poster"
+              src={poster}
+              alt="NET 3D 가챠 머신. 왼쪽 아래 손잡이로 질문을 뽑고, 위쪽 캡슐 보관통으로 질문을 넣을 수 있어요."
+              fetchPriority="high"
+              width={720}
+              height={1280}
+            />
+            <MachineHotspots
+              size={size}
+              disabled={busy}
+              requesting={joining || draw.phase === 'REQUESTING'}
+              showHints={showHints}
+              drawRef={drawButton}
+              onDraw={() => {
+                void start()
+              }}
+              onSubmit={openQuestion}
+            />
+          </>
+        )}
+      </MachineFrame>
+      {(error || draw.error) && (
+        <div className="machine-notice">
+          <ErrorNotice
+            message={error || draw.error}
+            retry={
+              selectedTableId
+                ? () => {
+                    void start()
+                  }
+                : undefined
+            }
+          />
+        </div>
+      )}
+      {draw.recovering && !draw.result && !error && !draw.error && (
+        <p className="machine-brief-status" role="status">
+          손잡이를 누르면 이전 뽑기를 이어서 확인해요.
+        </p>
+      )}
+      {success && (
+        <p className="machine-toast" role="status">
+          질문을 캡슐에 넣었어요!
+        </p>
+      )}
+      <QuestionSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onSuccess={() => {
+          setSheetOpen(false)
+          setSuccess(true)
+        }}
+      />
+      <GachaExperience
+        phase={draw.phase}
+        result={draw.result}
+        videoSrc={videoSrc}
+        poster={poster}
+        warning={draw.warning}
+        recovered={draw.recovering}
+        isMock={apiMode === 'mock'}
+        onReveal={draw.reveal}
+        onReset={draw.reset}
+      />
     </section>
-    <Link to="/table" className="button button-ghost w-full mt-4" aria-disabled={busy} onClick={event => { if (busy) event.preventDefault() }}>테이블로 돌아가기<Icon name="arrow" size={17} /></Link>
-    <GachaExperience phase={draw.phase} result={draw.result} videoSrc={videoSrc} poster={poster} warning={draw.warning} recovered={draw.recovering} isMock={apiMode === 'mock'} onReveal={draw.reveal} onReset={draw.reset} />
-  </div>
+  )
 }
-import { useCallback, useEffect } from 'react'

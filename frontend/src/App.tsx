@@ -1,38 +1,31 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { useSession } from './hooks/useSession'
 import { Layout } from './components/Layout'
-import { LandingPage } from './pages/LandingPage'
-import { TableSelectPage } from './pages/TableSelectPage'
-import { TableHomePage } from './pages/TableHomePage'
-import { QuestionSubmitPage } from './pages/QuestionSubmitPage'
 import { GachaPage } from './pages/GachaPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { AdminPage } from './pages/AdminPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
-function RequireNickname() {
-  const { nickname } = useSession()
-  return nickname ? <Outlet /> : <Navigate to="/" replace />
-}
-
-function RequireTable() {
-  const { session } = useSession()
-  return session ? <Outlet /> : <Navigate to="/tables" replace />
-}
-
 export function App() {
+  const { session } = useSession()
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<LandingPage />} />
-        <Route element={<RequireNickname />}>
-          <Route path="tables" element={<TableSelectPage />} />
-          <Route element={<RequireTable />}>
-            <Route path="table" element={<TableHomePage />} />
-            <Route path="questions" element={<QuestionSubmitPage />} />
-            <Route path="gacha" element={<GachaPage />} />
-            <Route path="history" element={<HistoryPage />} />
-          </Route>
-        </Route>
+        <Route index element={<GachaPage />} />
+        <Route
+          path="questions"
+          element={
+            <Navigate to="/" state={{ openQuestionSheet: true }} replace />
+          }
+        />
+        <Route path="admin" element={<AdminPage />} />
+        <Route
+          path="history"
+          element={session ? <HistoryPage /> : <Navigate to="/" replace />}
+        />
+        <Route path="gacha" element={<Navigate to="/" replace />} />
+        <Route path="table" element={<Navigate to="/" replace />} />
+        <Route path="tables" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

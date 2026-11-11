@@ -11,13 +11,19 @@ function storageKey(session: ParticipantSession) {
   return `net:draw:v1:${session.participant.id}:${session.participant.table_id}`
 }
 
-export function getDrawCheckpoint(session: ParticipantSession): DrawCheckpoint | null {
+export function getDrawCheckpoint(
+  session: ParticipantSession,
+): DrawCheckpoint | null {
   return readStorage(storageKey(session), (value): value is DrawCheckpoint => {
     if (!value || typeof value !== 'object') return false
     const checkpoint = value as Partial<DrawCheckpoint>
-    return typeof checkpoint.idempotencyKey === 'string' && !!checkpoint.idempotencyKey
-      && (checkpoint.result === null || (isDrawResult(checkpoint.result)
-        && checkpoint.result.table_id === session.participant.table_id))
+    return (
+      typeof checkpoint.idempotencyKey === 'string' &&
+      !!checkpoint.idempotencyKey &&
+      (checkpoint.result === null ||
+        (isDrawResult(checkpoint.result) &&
+          checkpoint.result.table_id === session.participant.table_id))
+    )
   })
 }
 
@@ -30,7 +36,11 @@ export function prepareDraw(session: ParticipantSession): DrawCheckpoint {
   return checkpoint
 }
 
-export function saveDrawResult(session: ParticipantSession, idempotencyKey: string, result: DrawResult) {
+export function saveDrawResult(
+  session: ParticipantSession,
+  idempotencyKey: string,
+  result: DrawResult,
+) {
   writeStorage(storageKey(session), { idempotencyKey, result })
 }
 
