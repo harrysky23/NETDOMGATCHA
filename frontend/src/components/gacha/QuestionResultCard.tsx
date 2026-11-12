@@ -6,6 +6,10 @@ import clipboardImage from '../../assets/question-clipboard.png'
 import seniorBadge from '../../assets/question-target-senior.png'
 import juniorBadge from '../../assets/question-target-junior.png'
 import allBadge from '../../assets/question-target-all.png'
+import { DEFAULT_TARGET_BADGE } from '../../services/questionDecoration'
+import { TargetSticker } from './scrapbook/TargetSticker'
+import { LetterPaper } from './scrapbook/LetterPaper'
+import { StickerImages } from './scrapbook/StickerComposer'
 import './question-clipboard.css'
 
 const RESULT_TARGET_BADGES = {
@@ -37,6 +41,7 @@ export function QuestionResultCard({
   const [imageState, setImageState] = useState<'loading' | 'ready' | 'error'>(
     'loading',
   )
+  const decoration = result.question.decoration
   const length = Array.from(result.question.content).length
   const density = length <= 16 ? 'short' : length <= 80 ? 'medium' : 'long'
   const badge = RESULT_TARGET_BADGES[result.question.target]
@@ -47,7 +52,7 @@ export function QuestionResultCard({
 
   return (
     <motion.section
-      className="question-clipboard"
+      className={`question-clipboard ${decoration ? 'letter-result' : ''}`}
       initial={
         reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.82, rotate: -3 }
       }
@@ -72,52 +77,86 @@ export function QuestionResultCard({
       aria-labelledby={titleId}
       aria-describedby={targetId}
     >
-      <div className="clipboard-art" data-image={imageState}>
-        <img
-          className="clipboard-image"
-          src={clipboardImage}
-          width={1362}
-          height={1155}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          onLoad={() => setImageState('ready')}
-          onError={() => setImageState('error')}
-        />
-        <img
-          id={targetId}
-          className="clipboard-target-badge"
-          src={badge.src}
-          alt={badge.alt}
-          width={badge.width}
-          height={badge.height}
-          draggable={false}
-        />
-        <button
-          type="button"
-          className="clipboard-close"
-          onClick={onReset}
-          aria-label="질문 결과 닫기"
-        >
-          <Icon name="close" size={17} />
-        </button>
-        <div className="clipboard-copy" data-density={density}>
-          <h2
-            className="clipboard-question"
-            ref={title}
-            tabIndex={0}
-            id={titleId}
+      {decoration ? (
+        <LetterPaper className="result-letter-paper">
+          <div className="letter-result-copy">
+            <h2
+              className="letter-result-question"
+              ref={title}
+              tabIndex={0}
+              id={titleId}
+            >
+              {result.question.content}
+            </h2>
+          </div>
+          <StickerImages stickers={decoration.stickers} />
+          <TargetSticker
+            id={targetId}
+            target={result.question.target}
+            position={decoration.target_badge ?? DEFAULT_TARGET_BADGE}
+          />
+          <button
+            type="button"
+            className="clipboard-close letter-result-close"
+            onClick={onReset}
+            aria-label="질문 결과 닫기"
           >
-            {result.question.content}
-          </h2>
-          {warning && (
-            <p className="clipboard-warning" role="alert">
-              {warning}
-            </p>
-          )}
+            <Icon name="close" size={17} />
+          </button>
+        </LetterPaper>
+      ) : (
+        <div className="clipboard-art" data-image={imageState}>
+          <img
+            className="clipboard-image"
+            src={clipboardImage}
+            width={1362}
+            height={1155}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            onLoad={() => setImageState('ready')}
+            onError={() => setImageState('error')}
+          />
+          <img
+            id={targetId}
+            className="clipboard-target-badge"
+            src={badge.src}
+            alt={badge.alt}
+            width={badge.width}
+            height={badge.height}
+            draggable={false}
+          />
+          <button
+            type="button"
+            className="clipboard-close"
+            onClick={onReset}
+            aria-label="질문 결과 닫기"
+          >
+            <Icon name="close" size={17} />
+          </button>
+          <div className="clipboard-copy" data-density={density}>
+            <h2
+              className="clipboard-question"
+              ref={title}
+              tabIndex={0}
+              id={titleId}
+            >
+              {result.question.content}
+            </h2>
+            {warning && (
+              <p className="clipboard-warning" role="alert">
+                {warning}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-      {imageState === 'error' && (
+      )}
+      {decoration && warning && (
+        <p className="clipboard-warning letter-result-warning" role="alert">
+          {warning}
+        </p>
+      )}
+      {!decoration && imageState === 'error' && (
         <span className="sr-only" role="status">
           메모 이미지를 불러오지 못했어요. 추첨한 질문은 확인할 수 있어요.
         </span>

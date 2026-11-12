@@ -1,11 +1,20 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'OngleipParkDahyun';
+  src: url('/fonts/OngleipParkDahyun.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 @theme {
   --color-night: #10121f;
   --color-panel: #191c2c;
   --color-lavender: #bca4f5;
   --font-sans:
-    'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    'OngleipParkDahyun', 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic',
+    system-ui, sans-serif;
 }
 
 :root {
@@ -25,6 +34,7 @@ body {
 }
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -144,7 +154,7 @@ fieldset {
   flex-shrink: 0;
 }
 .brand-word {
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
   font-size: 34px;
   font-weight: 900;
   letter-spacing: -2px;

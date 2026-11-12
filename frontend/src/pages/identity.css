@@ -13,7 +13,7 @@
 .identity-brand {
   display: block;
   color: #f6eaff;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans);
   font-weight: 900;
   font-size: 44px;
   letter-spacing: -3px;

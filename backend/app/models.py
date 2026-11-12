@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, Uuid
+from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -41,6 +42,7 @@ class Question(Base):
     author_nickname: Mapped[str | None] = mapped_column(String(12))
     content: Mapped[str] = mapped_column(Text)
     target: Mapped[str] = mapped_column(String(6))
+    decoration: Mapped[dict | None] = mapped_column(JSON().with_variant(JSONB, 'postgresql'), nullable=True)
     is_drawn: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 

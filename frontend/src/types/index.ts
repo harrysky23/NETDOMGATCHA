@@ -25,11 +25,40 @@ export interface ParticipantSession {
 }
 
 // 일반 참가자 응답에는 author_id를 포함하지 않습니다.
+export const STICKER_IDS = [
+  'heart-envelope',
+  'diamond',
+  'strawberry-milk',
+  'net-ticket',
+  'question-mark',
+  'stars',
+  'pixel-cursor',
+  'ribbon-star',
+  'clover-cat',
+] as const
+export type StickerId = (typeof STICKER_IDS)[number]
+export interface StickerPosition {
+  /** 편지지 전체 크기에 대한 중심 좌표(0–1). 화면 크기와 무관하게 복원합니다. */
+  x: number
+  y: number
+  rotation: number
+}
+export interface PlacedSticker extends StickerPosition {
+  id: StickerId
+}
+export interface QuestionDecoration {
+  version: 1
+  paper: 'lined'
+  target_badge?: StickerPosition
+  stickers: PlacedSticker[]
+}
+
 export interface Question {
   id: string
   table_id: string
   content: string
   target: QuestionTarget
+  decoration?: QuestionDecoration | null
   is_drawn: boolean
   created_at: string
 }
@@ -49,6 +78,7 @@ export interface DrawResult {
 }
 
 export interface QuestionDraft {
+  decoration?: QuestionDecoration | null
   content: string
   target: QuestionTarget
 }

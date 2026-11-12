@@ -8,6 +8,7 @@ import {
   type DrawResult,
 } from '../types/index.ts'
 import { readStorage, writeStorage } from './storage.ts'
+import { isDecoration } from './questionDecoration.ts'
 import { isDrawResult } from './validation.ts'
 import { getMockTables, INITIAL_TABLES } from './tableStore.ts'
 import { isVisitorId, normalizeNickname } from './visitorProfile.ts'
@@ -24,6 +25,7 @@ function publicQuestion(q: Question): Question {
     table_id: q.table_id,
     content: q.content,
     target: q.target,
+    decoration: q.decoration ? structuredClone(q.decoration) : null,
     is_drawn: q.is_drawn,
     created_at: q.created_at,
   }
@@ -99,7 +101,8 @@ function isQuestions(value: unknown): value is StoredQuestion[] {
         typeof q.content === 'string' &&
         ['senior', 'junior', 'all'].includes(q.target) &&
         typeof q.is_drawn === 'boolean' &&
-        typeof q.created_at === 'string',
+        typeof q.created_at === 'string' &&
+        (q.decoration == null || isDecoration(q.decoration)),
     )
   )
 }
@@ -201,7 +204,8 @@ export const mockApi: NetApi = {
     if (
       !content ||
       Array.from(content).length > 200 ||
-      !['senior', 'junior', 'all'].includes(input.target)
+      !['senior', 'junior', 'all'].includes(input.target) ||
+      (input.decoration != null && !isDecoration(input.decoration))
     ) {
       throw new ApiError(
         'VALIDATION_ERROR',
@@ -213,6 +217,7 @@ export const mockApi: NetApi = {
       table_id: tableId,
       content,
       target: input.target,
+      decoration: input.decoration ? structuredClone(input.decoration) : null,
       is_drawn: false,
       created_at: new Date().toISOString(),
       author_id: session.participant.id,
@@ -236,6 +241,9 @@ export const mockApi: NetApi = {
         table_id: question.table_id,
         content: question.content,
         target: question.target,
+        decoration: question.decoration
+          ? structuredClone(question.decoration)
+          : null,
         is_drawn: question.is_drawn || drawnIds.has(question.id),
         created_at: question.created_at,
       }))

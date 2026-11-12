@@ -111,7 +111,8 @@ export function createHttpApi(
 
   return {
     listTables: () => request('/tables'),
-    getParticipant: (session) => sessionRequest('/participants/me', session, {}),
+    getParticipant: (session) =>
+      sessionRequest('/participants/me', session, {}),
     createParticipant: (input) =>
       sessionRequest('/participants', undefined, {
         method: 'POST',
@@ -156,6 +157,7 @@ export function createHttpApi(
           table_id: question.table_id,
           content: question.content,
           target: question.target,
+          decoration: question.decoration ?? null,
           is_drawn: question.is_drawn,
           created_at: question.created_at,
         }))

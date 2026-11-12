@@ -99,3 +99,48 @@ def test_draw_idempotency_status_history_anonymity(client):
     assert len(client.get(url+'/history', headers=headers).json()) == 2
     assert client.get(url+'/draws/latest', headers=headers).json() == second.json()
     assert client.post(url+'/draw', headers={**headers, 'Idempotency-Key':'empty'}).json()['detail']['code'] == 'NO_QUESTIONS_AVAILABLE'
+
+
+def test_decoration_saved_shared_drawn_and_recovered(client):
+    author, headers, body = entry(client)
+    decoration = {'version': 1, 'paper': 'lined', 'target_badge': {'x':.67,'y':.31,'rotation':8}, 'stickers': [
+        {'id': 'clover-cat', 'x': .21, 'y': .81, 'rotation': -10},
+        {'id': 'stars', 'x': .77, 'y': .72, 'rotation': 8}]}
+    created = post_question(client, author, headers, decoration=decoration)
+    assert created.status_code == 201, created.text
+    assert created.json()['decoration'] == decoration
+    reader, reader_headers, _ = entry(client, table=body['table_id'])
+    url = '/api/tables/'+body['table_id']
+    assert client.get(url+'/questions', headers=reader_headers).json()[0]['decoration'] == decoration
+    draw_headers = {**reader_headers, 'Idempotency-Key': 'decorated'}
+    drawn = client.post(url+'/draw', headers=draw_headers)
+    assert drawn.status_code == 200
+    assert drawn.json()['question']['decoration'] == decoration
+    assert client.post(url+'/draw', headers=draw_headers).json() == drawn.json()
+    assert client.get(url+'/draws/latest', headers=reader_headers).json() == drawn.json()
+    assert client.get(url+'/history', headers=reader_headers).json()[0] == drawn.json()
+    with client.app.state.engine.connect() as db:
+        assert db.execute(select(Question.decoration)).scalar_one() == decoration
+    assert post_question(client, author, headers).json()['decoration'] is None
+
+
+@pytest.mark.parametrize('changes', [{'id':'https://evil/image.png'}, {'x':-.1}, {'y':2}, {'rotation':21}, {'x':'0.5'}, {'x':True}])
+def test_bad_sticker_metadata_rejected(client, changes):
+    session, headers, _ = entry(client)
+    sticker = {'id':'stars', 'x':.2, 'y':.8, 'rotation':0, **changes}
+    decoration = {'version':1, 'paper':'lined', 'stickers':[sticker]}
+    assert post_question(client, session, headers, decoration=decoration).status_code == 422
+
+
+def test_duplicate_and_excess_stickers_rejected(client):
+    session, headers, _ = entry(client)
+    s = {'id':'stars','x':.2,'y':.8,'rotation':0}
+    for stickers in [[s,s],[s]*4]:
+        assert post_question(client,session,headers,decoration={'version':1,'paper':'lined','stickers':stickers}).status_code == 422
+
+
+
+def test_bad_target_badge_position_rejected(client):
+    session, headers, _ = entry(client)
+    decoration = {'version':1, 'paper':'lined', 'stickers':[], 'target_badge':{'x':2,'y':.3,'rotation':0}}
+    assert post_question(client, session, headers, decoration=decoration).status_code == 422

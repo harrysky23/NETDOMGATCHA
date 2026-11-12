@@ -31,7 +31,7 @@ def timestamp(value):
 
 def question_public(q):
     return {'id': q.id, 'table_id': q.table_id, 'content': q.content, 'target': q.target,
-            'is_drawn': q.is_drawn, 'created_at': timestamp(q.created_at)}
+            'decoration': q.decoration, 'is_drawn': q.is_drawn, 'created_at': timestamp(q.created_at)}
 
 
 def participant_public(p, token):
@@ -178,7 +178,8 @@ def create_app(database_url=None, *, initialize=False):
         if p.visitor_id != body.visitorId or p.nickname != body.nickname:
             fail('UNAUTHORIZED', '질문 작성자와 인증된 참가자 정보가 일치하지 않아요.', 403)
         q = Question(table_id=table_id, author_id=p.id, author_visitor_id=p.visitor_id,
-                     author_nickname=p.nickname, content=body.content, target=body.target)
+                     author_nickname=p.nickname, content=body.content, target=body.target,
+                     decoration=body.decoration.model_dump(exclude_none=True) if body.decoration else None)
         db.add(q)
         db.commit()  # 클라이언트 입력 대신 인증 세션의 값을 스냅샷으로 저장합니다.
         return question_public(q)

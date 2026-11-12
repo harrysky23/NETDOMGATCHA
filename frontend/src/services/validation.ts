@@ -3,6 +3,7 @@ import type {
   ParticipantSession,
   Question,
 } from '../types/index.ts'
+import { isDecoration } from './questionDecoration.ts'
 import { isVisitorId } from './visitorProfile.ts'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -19,7 +20,8 @@ export function isQuestion(value: unknown): value is Question {
     Array.from(value.content).length <= 200 &&
     ['senior', 'junior', 'all'].includes(String(value.target)) &&
     typeof value.is_drawn === 'boolean' &&
-    typeof value.created_at === 'string'
+    typeof value.created_at === 'string' &&
+    (value.decoration == null || isDecoration(value.decoration))
   )
 }
 

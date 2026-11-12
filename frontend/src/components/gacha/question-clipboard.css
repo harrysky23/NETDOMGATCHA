@@ -1,11 +1,3 @@
-@font-face {
-  font-family: 'OngleipParkDahyun';
-  src: url('/fonts/OngleipParkDahyun.ttf') format('truetype');
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
 /* PNG 자체의 여백·투명도를 유지하고 결과 레이어만 은은하게 어둡게 합니다. */
 .gacha-cinema .question-reveal-layer:has(> .question-clipboard) {
   padding: 24px 0;
@@ -166,4 +158,66 @@
   .clipboard-question {
     scroll-behavior: auto;
   }
+}
+
+.question-clipboard.letter-result {
+  width: min(
+    94vw,
+    600px,
+    calc((100svh - var(--machine-header-height, 68px) - 100px) * 1493 / 1054)
+  );
+}
+.result-letter-paper {
+  filter: drop-shadow(0 12px 18px #10051f45);
+}
+.letter-result-copy {
+  position: absolute;
+  left: 15%;
+  top: 28%;
+  width: 73%;
+  height: 48%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.letter-result-question {
+  max-height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 3px;
+  color: #493054;
+  font-family: var(--font-sans);
+  font-size: clamp(23px, 6.6cqw, 30px);
+  line-height: 1.4;
+  font-weight: 400;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: center;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+.letter-target-badge {
+  position: absolute;
+  top: 17%;
+  right: 9%;
+  width: 25%;
+  height: auto;
+  object-fit: contain;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+.letter-result-close {
+  top: -8px;
+  right: 1%;
+  z-index: 3;
+}
+.letter-result-warning {
+  margin: 10px auto 0;
+  padding: 8px 12px;
+  color: #fce6f5;
+  background: #321d45;
+  border-radius: 8px;
 }
