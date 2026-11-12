@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NET 대기 루프 비교</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; background: #170e29; color: #f5eaff; font: 15px/1.7 system-ui, sans-serif; }
+    main { max-width: 900px; margin: auto; }
+    h1 { font-size: 23px; margin: 0 0 6px; }
+    p { color: #cdbbdd; }
+    .versions { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    h2 { font-size: 16px; margin: 0 0 10px; }
+    video { display: block; width: 100%; max-height: 70vh; aspect-ratio: 9/16; object-fit: contain; background: #10091c; }
+    small { display: block; margin: 10px 0; color: #bba8ce; }
+    @media(max-width: 550px) { body { padding: 16px; } .versions { gap: 12px; } h2 { font-size: 13px; } }
+  </style>
+  <main>
+    <h1>NET 대기 루프 비교</h1>
+    <p>원본 5.0~7.875초 · 720×1280 · 24fps · 음소거 반복. 각 영상을 일시 정지하거나 탐색하며 반전 지점을 비교할 수 있습니다.</p>
+    <div class="versions">
+      <section>
+        <h2>단순 Ping-Pong</h2>
+        <video src="gacha-idle-pingpong.mp4" autoplay muted loop playsinline controls preload="metadata"></video>
+        <small>5.75초 · 138프레임 · 끝점 중복 제거</small>
+      </section>
+      <section>
+        <h2>짧은 크로스페이드 · 적용본</h2>
+        <video src="../../frontend/src/assets/gacha-idle-pingpong-crossfade.mp4" autoplay muted loop playsinline controls preload="metadata"></video>
+        <small>5.5초 · 132프레임 · 두 반전 지점에 0.125초 디졸브</small>
+      </section>
+    </div>
+    <p>반복 경계를 포함한 연속 중복 프레임: 두 버전 모두 0개. 짧은 디졸브 버전은 방향 반전을 완만하게 하며, 일부 캡슐에는 약한 잔상이 생길 수 있습니다.</p>
+  </main>
+</html>

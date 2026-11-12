@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { createPortal, preload } from 'react-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import type { DrawResult } from '../../types'
 import type { GachaPhase } from '../../hooks/useGachaDraw'
@@ -10,6 +10,7 @@ import { HomeLink } from '../HomeLink'
 import { GachaIdleVideo } from './GachaIdleVideo'
 import { mediaPolicy } from './idlePlayback'
 import type { MachineSize } from './machineGeometry'
+import clipboardImage from '../../assets/question-clipboard.png'
 
 interface Props {
   phase: GachaPhase
@@ -57,6 +58,11 @@ export function GachaExperience({
     ),
   )
   const open = phase === 'PLAYING' || phase === 'REVEAL'
+
+  useEffect(() => {
+    if (phase === 'PLAYING')
+      preload(clipboardImage, { as: 'image', fetchPriority: 'low' })
+  }, [phase])
 
   useEffect(() => {
     const element = dialog.current

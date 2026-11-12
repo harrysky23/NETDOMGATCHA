@@ -1,0 +1,39 @@
+{
+  "source": "Animate_gashapon_machine_capsule…_ac9055dc.mp4",
+  "source_selection": {
+    "start_frame": 120,
+    "end_frame_exclusive": 190,
+    "fps": 24,
+    "first_frame_seconds": 5.0,
+    "last_frame_seconds": 7.875
+  },
+  "unencoded_pingpong_order_verified": true,
+  "candidates": {
+    "artifacts/idle-loops/gacha-idle-pingpong.mp4": {
+      "frames": 138,
+      "duration_seconds": 5.75,
+      "size_bytes": 1080129,
+      "duplicate_neighbors_including_wrap": 0,
+      "seam_luma_difference": 2.6724,
+      "median_adjacent_luma_difference": 2.288,
+      "max_adjacent_luma_difference": 3.2144,
+      "turn_luma_second_difference": [
+        1.7234,
+        5.1006
+      ]
+    },
+    "frontend/src/assets/gacha-idle-pingpong-crossfade.mp4": {
+      "frames": 132,
+      "duration_seconds": 5.5,
+      "size_bytes": 1028223,
+      "duplicate_neighbors_including_wrap": 0,
+      "seam_luma_difference": 2.9097,
+      "median_adjacent_luma_difference": 2.261,
+      "max_adjacent_luma_difference": 3.2063,
+      "turn_luma_second_difference": [
+        1.4196,
+        2.7025
+      ]
+    }
+  }
+}
