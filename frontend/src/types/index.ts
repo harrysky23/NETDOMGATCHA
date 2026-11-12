@@ -1,5 +1,11 @@
 export type QuestionTarget = 'senior' | 'junior' | 'all'
 
+/** 브라우저 식별용 정보이며 인증 자격 증명이 아닙니다. */
+export interface VisitorProfile {
+  visitorId: string
+  nickname: string
+}
+
 export interface EventTable {
   id: string
   number: number
@@ -10,6 +16,7 @@ export interface Participant {
   id: string
   nickname: string
   table_id: string
+  visitor_id?: string // 기존 참가자 세션은 첫 쓰기 요청 전에 연결합니다.
 }
 
 export interface ParticipantSession {
@@ -41,10 +48,12 @@ export interface DrawResult {
   drawn_at: string
 }
 
-export interface SubmitQuestionInput {
+export interface QuestionDraft {
   content: string
   target: QuestionTarget
 }
+
+export interface SubmitQuestionInput extends QuestionDraft, VisitorProfile {}
 
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'

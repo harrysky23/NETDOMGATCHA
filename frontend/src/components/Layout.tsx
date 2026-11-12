@@ -27,6 +27,7 @@ export function Layout() {
       '/questions/list': '질문 목록',
       '/history': '추첨 기록',
       '/admin': '테이블 관리',
+      '/profile': '닉네임 변경',
     }
     document.title = `NET — ${titles[location.pathname] ?? '페이지를 찾을 수 없어요'}`
     void tables.refresh()

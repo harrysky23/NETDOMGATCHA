@@ -20,7 +20,11 @@ beforeEach(() => {
 })
 
 const enter = () =>
-  mockApi.createParticipant({ nickname: 'NET', table_id: TABLES[0].id })
+  mockApi.createParticipant({
+    visitorId: crypto.randomUUID(),
+    nickname: 'NET',
+    table_id: TABLES[0].id,
+  })
 
 test('미완료 요청은 재진입·재시도에도 최초 키를 재사용', async () => {
   const session = await enter()

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Icon } from '../components/Icon'
 import { ErrorNotice } from '../components/Feedback'
 import { GachaExperience } from '../components/gacha/GachaExperience'
 import { MachineHotspots } from '../components/gacha/MachineHotspots'
@@ -18,7 +19,8 @@ import '../components/gacha/machine-ui.css'
 const HINT_KEY = 'net:machine:hints-seen:v1'
 
 export function GachaPage() {
-  const { session, selectedTableId, ensureParticipant, pending } = useSession()
+  const { session, selectedTableId, ensureParticipant, pending, nickname } =
+    useSession()
   const reduceMotion = useReducedMotion()
   const draw = useGachaDraw(session)
   const [joining, setJoining] = useState(false)
@@ -102,6 +104,20 @@ export function GachaPage() {
 
   return (
     <section className="machine-screen" aria-label="NET 캡슐 가챠">
+      <Link
+        to="/profile"
+        className="machine-nickname"
+        title={`${nickname} · 닉네임 변경`}
+        aria-label={`${nickname}, 닉네임 변경`}
+        aria-disabled={busy}
+        tabIndex={busy ? -1 : 0}
+        onClick={(event) => {
+          if (busy) event.preventDefault()
+        }}
+      >
+        <span>{nickname}</span>
+        <Icon name="pen" size={12} />
+      </Link>
       <h1 className="sr-only">
         NET 캡슐 가챠 — 손잡이로 뽑고 보관통으로 질문 넣기
       </h1>

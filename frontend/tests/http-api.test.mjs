@@ -120,3 +120,31 @@ test('최근 추첨이 없는 정상 null 응답 허용', async () => {
   const api = createHttpApi('/api', async () => Response.json(null))
   assert.equal(await api.getLatestDraw(session, 'table'), null)
 })
+
+test('질문 요청에 visitorId·nickname과 Bearer 세션을 함께 전달', async () => {
+  let request
+  const api=createHttpApi('/api', async(url, options)=>{
+    request={url,options}
+    return Response.json(result.question)
+  })
+  const input={visitorId:crypto.randomUUID(), nickname:'NET', content:'자동 작성자', target:'all'}
+  await api.submitQuestion(session,'table',input)
+  assert.equal(request.url,'/api/tables/table/questions')
+  assert.deepEqual(JSON.parse(request.options.body),input)
+  assert.equal(request.options.headers.Authorization,'Bearer server-token')
+})
+
+test('참가자 프로필 변경은 방문자 식별자 대신 기존 Bearer 토큰으로 인증',async()=>{
+  let request
+  const input={visitorId:crypto.randomUUID(),nickname:'새이름'}
+  const updated={...session,participant:{...session.participant,nickname:input.nickname,visitor_id:input.visitorId}}
+  const api=createHttpApi('/api',async(url,options)=>{
+    request={url,options}
+    return Response.json(updated)
+  })
+  assert.deepEqual(await api.updateParticipantProfile(session,input),updated)
+  assert.equal(request.url,'/api/participants/me/profile')
+  assert.equal(request.options.method,'PATCH')
+  assert.equal(request.options.headers.Authorization,'Bearer server-token')
+  assert.deepEqual(JSON.parse(request.options.body),input)
+})

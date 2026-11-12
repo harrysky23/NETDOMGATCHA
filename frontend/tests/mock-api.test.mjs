@@ -17,13 +17,38 @@ beforeEach(() => {
 })
 
 const enter = (table = 0, nickname = 'NET') =>
-  mockApi.createParticipant({ nickname, table_id: TABLES[table].id })
+  mockApi.createParticipant({
+    visitorId: crypto.randomUUID(),
+    nickname,
+    table_id: TABLES[table].id,
+  })
 const hasCode = (code) => (error) => error.code === code
+
+test('작성자 정보는 저장하되 응답에서 숨기고 닉네임 변경 후에도 방문자/참가자/토큰 유지', async () => {
+  const session = await enter()
+  const author = { visitorId: session.participant.visitor_id, nickname: session.participant.nickname }
+  const question = await mockApi.submitQuestion(session, TABLES[0].id, { ...author, content: '작성자 저장', target: 'all' })
+  const stored = JSON.parse(values.get(`net:mock:questions:v1:${TABLES[0].id}`)).find(q=>q.id===question.id)
+  assert.equal(stored.author_visitor_id, author.visitorId)
+  assert.equal(stored.author_nickname, author.nickname)
+  assert.equal('author_visitor_id' in question, false)
+  const renamed = await mockApi.updateParticipantProfile(session, { ...author, nickname: '변경한이름' })
+  assert.equal(renamed.participant.id, session.participant.id)
+  assert.equal(renamed.participant.visitor_id, author.visitorId)
+  assert.equal(renamed.token, session.token)
+  assert.equal(stored.author_nickname, author.nickname)
+  await assert.rejects(mockApi.submitQuestion(renamed, TABLES[0].id, { ...author, content:'옛이름 사칭', target:'all' }), hasCode('UNAUTHORIZED'))
+  await assert.rejects(mockApi.updateParticipantProfile(renamed, { visitorId:crypto.randomUUID(), nickname:'다른 방문자' }),hasCode('UNAUTHORIZED'))
+  const draws=await mockApi.draw(renamed,TABLES[0].id,'private-test')
+  assert.equal('author_id' in draws.question,false)
+})
 
 test('질문 목록은 현재 테이블만 최신순으로 보여주고 조회로 추첨 상태를 바꾸지 않음', async () => {
   const one = await enter()
   const two = await enter(1)
   const question = await mockApi.submitQuestion(one, TABLES[0].id, {
+    visitorId: one.participant.visitor_id,
+    nickname: one.participant.nickname,
     content: '질문함에서 확인할 질문',
     target: 'junior',
   })
@@ -65,7 +90,11 @@ test('입장 검증, 중복 닉네임 허용, 서로 다른 참가자 ID', async
   await assert.rejects(enter(0, '   '), hasCode('VALIDATION_ERROR'))
   await assert.rejects(enter(0, '가'.repeat(13)), hasCode('VALIDATION_ERROR'))
   await assert.rejects(
-    mockApi.createParticipant({ nickname: 'NET', table_id: 'invalid' }),
+    mockApi.createParticipant({
+      visitorId: crypto.randomUUID(),
+      nickname: 'NET',
+      table_id: 'invalid',
+    }),
     hasCode('TABLE_NOT_FOUND'),
   )
 })
@@ -75,6 +104,8 @@ test('질문은 현재 테이블에만 저장하고 재조회 시 시드를 중�
   const two = await enter(1)
   const initial = await mockApi.getStatus(one, TABLES[0].id)
   const question = await mockApi.submitQuestion(one, TABLES[0].id, {
+    visitorId: one.participant.visitor_id,
+    nickname: one.participant.nickname,
     content: '  오늘 어땠나요?  ',
     target: 'senior',
   })
@@ -95,7 +126,12 @@ test('질문은 현재 테이블에만 저장하고 재조회 시 시드를 중�
 test('질문 1자/200자/공백/201자/잘못된 대상 경계 검증', async () => {
   const session = await enter()
   const submit = (content, target = 'all') =>
-    mockApi.submitQuestion(session, TABLES[0].id, { content, target })
+    mockApi.submitQuestion(session, TABLES[0].id, {
+      visitorId: session.participant.visitor_id,
+      nickname: session.participant.nickname,
+      content,
+      target,
+    })
   await submit('가')
   await submit('가'.repeat(200))
   await submit('🎉'.repeat(200))
@@ -120,6 +156,8 @@ test('테이블 변경 시 ID/토큰 유지, 변경된 세션의 이전 테이�
   )
   await assert.rejects(
     mockApi.submitQuestion(moved, TABLES[0].id, {
+      visitorId: moved.participant.visitor_id,
+      nickname: moved.participant.nickname,
       content: '질문',
       target: 'all',
     }),
@@ -192,6 +230,8 @@ test('저장소 차단 시 저장 성공으로 오인하지 않고 오류 반환
   )
   await assert.rejects(
     mockApi.submitQuestion(session, TABLES[0].id, {
+      visitorId: session.participant.visitor_id,
+      nickname: session.participant.nickname,
       content: '질문',
       target: 'all',
     }),

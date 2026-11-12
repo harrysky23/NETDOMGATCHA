@@ -43,6 +43,7 @@ test('추가된 테이블도 입장·질문·추첨이 독립 동작', async () 
   const admin = createMockAdminApi()
   const table = await admin.addTable(await admin.login(''))
   const guest = await mockApi.createParticipant({
+    visitorId: crypto.randomUUID(),
     nickname: '게스트',
     table_id: table.id,
   })
@@ -51,6 +52,7 @@ test('추가된 테이블도 입장·질문·추첨이 독립 동작', async () 
   assert.equal((await mockApi.getStatus(guest, table.id)).remaining_count, 11)
   const initial = getMockTables()[0]
   const other = await mockApi.createParticipant({
+    visitorId: crypto.randomUUID(),
     nickname: '게스트',
     table_id: initial.id,
   })

@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion } from 'motion/react'
 import { useSession } from '../../hooks/useSession'
-import { api } from '../../services/api'
 import { TARGET_LABELS, type QuestionTarget } from '../../types'
 import { ErrorNotice } from '../Feedback'
 import { Icon } from '../Icon'
@@ -17,11 +16,9 @@ export function QuestionSheet({
   onClose: () => void
   onSuccess: () => void
 }) {
-  const { nickname, selectedTableId, ensureParticipant } = useSession()
+  const { profile, selectedTableId, submitQuestion } = useSession()
   const dialog = useRef<HTMLDialogElement>(null)
-  const input = useRef<HTMLInputElement>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
-  const [name, setName] = useState(nickname)
   const [content, setContent] = useState('')
   const [target, setTarget] = useState<QuestionTarget>('all')
   const [pending, setPending] = useState(false)
@@ -29,13 +26,8 @@ export function QuestionSheet({
   const locked = useRef(false)
   const reduceMotion = useReducedMotion()
   const count = Array.from(content).length
-  const nameCount = Array.from(name.trim()).length
   const valid =
-    !!selectedTableId &&
-    nameCount > 0 &&
-    nameCount <= 12 &&
-    !!content.trim() &&
-    count <= 200
+    !!selectedTableId && !!profile && !!content.trim() && count <= 200
 
   useEffect(() => {
     const element = dialog.current
@@ -79,8 +71,7 @@ export function QuestionSheet({
     setError('')
     const tableId = selectedTableId
     try {
-      const participant = await ensureParticipant(tableId, name)
-      await api.submitQuestion(participant, tableId, { content, target })
+      await submitQuestion(tableId, { content, target })
       setContent('')
       setTarget('all')
       onSuccess()
@@ -139,20 +130,6 @@ export function QuestionSheet({
             className="machine-question-form"
           >
             <fieldset disabled={pending}>
-              <label className="sheet-label" htmlFor="sheet-nickname">
-                닉네임 <span>질문에는 공개되지 않아요</span>
-              </label>
-              <input
-                ref={input}
-                id="sheet-nickname"
-                className="simple-input"
-                autoComplete="nickname"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="닉네임 (1–12자)"
-                required
-                aria-invalid={nameCount > 12}
-              />
               <fieldset className="sheet-target-group">
                 <legend className="sheet-label">누구에게?</legend>
                 <div className="simple-targets">

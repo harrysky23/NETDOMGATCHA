@@ -111,6 +111,7 @@ export function createHttpApi(
 
   return {
     listTables: () => request('/tables'),
+    getParticipant: (session) => sessionRequest('/participants/me', session, {}),
     createParticipant: (input) =>
       sessionRequest('/participants', undefined, {
         method: 'POST',
@@ -120,6 +121,11 @@ export function createHttpApi(
       sessionRequest('/participants/me/table', session, {
         method: 'PATCH',
         body: JSON.stringify({ table_id: tableId }),
+      }),
+    updateParticipantProfile: (session, profile) =>
+      sessionRequest('/participants/me/profile', session, {
+        method: 'PATCH',
+        body: JSON.stringify(profile),
       }),
     getStatus: (session, tableId) =>
       request(`/tables/${encodeURIComponent(tableId)}/status`, session),

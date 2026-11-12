@@ -10,6 +10,24 @@ import {
 import { readStorage, writeStorage } from './storage.ts'
 import { isDrawResult } from './validation.ts'
 import { getMockTables, INITIAL_TABLES } from './tableStore.ts'
+import { isVisitorId, normalizeNickname } from './visitorProfile.ts'
+
+interface StoredQuestion extends Question {
+  author_id?: string
+  author_visitor_id?: string
+  author_nickname?: string
+}
+// 작성자 스냅샷은 저장소에만 기록하고 모든 참가자 응답에서는 제외합니다.
+function publicQuestion(q: Question): Question {
+  return {
+    id: q.id,
+    table_id: q.table_id,
+    content: q.content,
+    target: q.target,
+    is_drawn: q.is_drawn,
+    created_at: q.created_at,
+  }
+}
 
 interface MockDrawReceipt {
   idempotencyKey: string
@@ -70,7 +88,7 @@ function checkAccess(session: ParticipantSession, tableId: string) {
     )
 }
 
-function isQuestions(value: unknown): value is Question[] {
+function isQuestions(value: unknown): value is StoredQuestion[] {
   return (
     Array.isArray(value) &&
     value.every(
@@ -107,14 +125,41 @@ export const mockApi: NetApi = {
   async listTables() {
     return getMockTables()
   },
-  async createParticipant({ nickname, table_id }) {
+  async getParticipant(session) {
+    checkAccess(session, session.participant.table_id)
+    return { ...session, participant: { ...session.participant } }
+  },
+  async createParticipant({ nickname, table_id, visitorId }) {
     tableById(table_id)
-    const trimmed = nickname.trim()
-    if (!trimmed || Array.from(trimmed).length > 12)
-      throw new ApiError('VALIDATION_ERROR', '닉네임은 1–12자로 입력해 주세요.')
+    const trimmed = normalizeNickname(nickname)
+    if (!isVisitorId(visitorId))
+      throw new ApiError('VALIDATION_ERROR', '방문자 ID가 올바르지 않아요.')
     return {
-      participant: { id: crypto.randomUUID(), nickname: trimmed, table_id },
+      participant: {
+        id: crypto.randomUUID(),
+        nickname: trimmed,
+        table_id,
+        visitor_id: visitorId,
+      },
       token: `mock-${crypto.randomUUID()}`,
+    }
+  },
+  async updateParticipantProfile(session, profile) {
+    checkAccess(session, session.participant.table_id)
+    const nickname = normalizeNickname(profile.nickname)
+    if (
+      !isVisitorId(profile.visitorId) ||
+      (session.participant.visitor_id &&
+        session.participant.visitor_id !== profile.visitorId)
+    )
+      throw new ApiError('UNAUTHORIZED', '다른 방문자 정보로 변경할 수 없어요.')
+    return {
+      ...session,
+      participant: {
+        ...session.participant,
+        visitor_id: profile.visitorId,
+        nickname,
+      },
     }
   },
   async changeTable(session, tableId) {
@@ -143,6 +188,15 @@ export const mockApi: NetApi = {
   },
   async submitQuestion(session, tableId, input) {
     checkAccess(session, tableId)
+    if (
+      !isVisitorId(input.visitorId) ||
+      normalizeNickname(input.nickname) !== session.participant.nickname ||
+      input.visitorId !== session.participant.visitor_id
+    )
+      throw new ApiError(
+        'UNAUTHORIZED',
+        '질문 작성자와 입장 정보가 일치하지 않아요.',
+      )
     const content = input.content.trim()
     if (
       !content ||
@@ -154,19 +208,22 @@ export const mockApi: NetApi = {
         '질문은 1–200자로 입력하고 대상을 선택해 주세요.',
       )
     }
-    const question: Question = {
+    const question: StoredQuestion = {
       id: crypto.randomUUID(),
       table_id: tableId,
       content,
       target: input.target,
       is_drawn: false,
       created_at: new Date().toISOString(),
+      author_id: session.participant.id,
+      author_visitor_id: input.visitorId,
+      author_nickname: session.participant.nickname,
     }
     writeStorage(`net:mock:questions:v1:${tableId}`, [
       ...readQuestions(tableId),
       question,
     ])
-    return question
+    return publicQuestion(question)
   },
   async listQuestions(session, tableId) {
     checkAccess(session, tableId)
@@ -208,7 +265,7 @@ export const mockApi: NetApi = {
     const result: DrawResult = {
       id: crypto.randomUUID(),
       table_id: tableId,
-      question: { ...question, is_drawn: true },
+      question: { ...publicQuestion(question), is_drawn: true },
       drawn_at: new Date().toISOString(),
     }
     // 추첨·멱등 결과를 하나의 저장값으로 기록하여 부분 저장을 피합니다.

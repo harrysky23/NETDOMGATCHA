@@ -1,18 +1,37 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fitMachine, hotspotRect, MACHINE_ART, MACHINE_HOTSPOTS } from '../src/components/gacha/machineGeometry.ts'
+import {
+  fitMachine,
+  hotspotRect,
+  MACHINE_ART,
+  MACHINE_HOTSPOTS,
+} from '../src/components/gacha/machineGeometry.ts'
 
 test('모바일·가로 화면·데스크톱에서 원본 비율을 유지하고 크롭하지 않음', () => {
-  for (const [width, height] of [[320, 512], [390, 782], [844, 328], [1440, 832]]) {
+  for (const [width, height] of [
+    [320, 512],
+    [390, 782],
+    [844, 328],
+    [1440, 832],
+  ]) {
     const frame = fitMachine(width, height)
-    assert.ok(frame.width <= width + .001)
-    assert.ok(frame.height <= height + .001)
-    assert.ok(Math.abs(frame.width / frame.height - MACHINE_ART.width / MACHINE_ART.height) < .00001)
+    assert.ok(frame.width <= width + 0.001)
+    assert.ok(frame.height <= height + 0.001)
+    assert.ok(
+      Math.abs(
+        frame.width / frame.height - MACHINE_ART.width / MACHINE_ART.height,
+      ) < 0.00001,
+    )
   }
 })
 
 test('핫스폿은 실제 이미지의 같은 위치에 유지되고 최소 44px 터치 영역을 확보', () => {
-  for (const [width, height] of [[320, 512], [390, 782], [844, 328], [1440, 832]]) {
+  for (const [width, height] of [
+    [320, 512],
+    [390, 782],
+    [844, 328],
+    [1440, 832],
+  ]) {
     const frame = fitMachine(width, height)
     for (const region of Object.values(MACHINE_HOTSPOTS)) {
       const rect = hotspotRect(frame, region)
@@ -20,8 +39,16 @@ test('핫스폿은 실제 이미지의 같은 위치에 유지되고 최소 44px
       assert.ok(rect.left >= 0 && rect.top >= 0)
       assert.ok(rect.left + rect.width <= frame.width)
       assert.ok(rect.top + rect.height <= frame.height)
-      assert.ok(Math.abs((rect.left + rect.width / 2) / frame.width * 100 - region.x) < .00001)
-      assert.ok(Math.abs((rect.top + rect.height / 2) / frame.height * 100 - region.y) < .00001)
+      assert.ok(
+        Math.abs(
+          ((rect.left + rect.width / 2) / frame.width) * 100 - region.x,
+        ) < 0.00001,
+      )
+      assert.ok(
+        Math.abs(
+          ((rect.top + rect.height / 2) / frame.height) * 100 - region.y,
+        ) < 0.00001,
+      )
     }
   }
 })

@@ -3,13 +3,19 @@ import { motion, useReducedMotion } from 'motion/react'
 import type { DrawResult, QuestionTarget } from '../../types'
 import { Icon } from '../Icon'
 import clipboardImage from '../../assets/question-clipboard.png'
+import seniorBadge from '../../assets/question-target-senior.png'
+import juniorBadge from '../../assets/question-target-junior.png'
+import allBadge from '../../assets/question-target-all.png'
 import './question-clipboard.css'
 
-const RESULT_TARGET_LABELS = {
-  senior: 'OB',
-  junior: 'YB',
-  all: '전체',
-} satisfies Record<QuestionTarget, string>
+const RESULT_TARGET_BADGES = {
+  senior: { src: seniorBadge, alt: '선배에게', width: 2164, height: 727 },
+  junior: { src: juniorBadge, alt: '후배에게', width: 2103, height: 748 },
+  all: { src: allBadge, alt: '모두에게', width: 2164, height: 727 },
+} satisfies Record<
+  QuestionTarget,
+  { src: string; alt: string; width: number; height: number }
+>
 
 export function QuestionResultCard({
   result,
@@ -33,6 +39,7 @@ export function QuestionResultCard({
   )
   const length = Array.from(result.question.content).length
   const density = length <= 16 ? 'short' : length <= 80 ? 'medium' : 'long'
+  const badge = RESULT_TARGET_BADGES[result.question.target]
 
   useEffect(() => {
     title.current?.focus({ preventScroll: true })
@@ -77,6 +84,15 @@ export function QuestionResultCard({
           onLoad={() => setImageState('ready')}
           onError={() => setImageState('error')}
         />
+        <img
+          id={targetId}
+          className="clipboard-target-badge"
+          src={badge.src}
+          alt={badge.alt}
+          width={badge.width}
+          height={badge.height}
+          draggable={false}
+        />
         <button
           type="button"
           className="clipboard-close"
@@ -86,9 +102,6 @@ export function QuestionResultCard({
           <Icon name="close" size={17} />
         </button>
         <div className="clipboard-copy" data-density={density}>
-          <span className="clipboard-target" id={targetId}>
-            {RESULT_TARGET_LABELS[result.question.target]}
-          </span>
           <h2
             className="clipboard-question"
             ref={title}

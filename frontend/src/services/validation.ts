@@ -3,6 +3,7 @@ import type {
   ParticipantSession,
   Question,
 } from '../types/index.ts'
+import { isVisitorId } from './visitorProfile.ts'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -45,6 +46,8 @@ export function isParticipantSession(
     typeof value.participant.nickname === 'string' &&
     !!value.participant.nickname.trim() &&
     Array.from(value.participant.nickname).length <= 12 &&
-    typeof value.participant.table_id === 'string'
+    typeof value.participant.table_id === 'string' &&
+    (value.participant.visitor_id === undefined ||
+      isVisitorId(value.participant.visitor_id))
   )
 }

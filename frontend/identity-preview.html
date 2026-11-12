@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/favicon.svg"><title>NET 방문자 검증</title><div id="root"></div><script>history.replaceState(null,'','/')</script><script type="module" src="/src/main.tsx"></script><aside id="qa" style="position:fixed;bottom:0;left:0;right:0;z-index:10000;background:white;color:black;font:10px monospace"><output id="state"></output></aside><script type="module">
+const panel=document.querySelector('#qa'),state=document.querySelector('#state');
+setInterval(()=>{
+ const host=document.querySelector('dialog[open]')??document.body;
+ if(panel.parentElement!==host)host.append(panel);
+ let profile=null, participant=null;
+ try{profile=JSON.parse(localStorage.getItem('net:visitor-profile:v1'));participant=JSON.parse(localStorage.getItem('net:session:http:v1'))?.participant}catch{}
+ const q=document.querySelector('.clipboard-question');
+ const ui=document.querySelector('.brand-word');
+ state.textContent='QA '+JSON.stringify({visitor:profile?.visitorId,nickname:profile?.nickname,participant:participant?.id,questionNameField:!!document.querySelector('#sheet-nickname'),fontLoaded:document.fonts.check('24px OngleipParkDahyun'),font:q&&getComputedStyle(q).fontFamily,size:q&&getComputedStyle(q).fontSize,color:q&&getComputedStyle(q).color,uiFont:ui&&getComputedStyle(ui).fontFamily});
+},500);
+</script></html>
