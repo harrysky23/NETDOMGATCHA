@@ -3,7 +3,6 @@ import { useReducedMotion } from 'motion/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ErrorNotice } from '../components/Feedback'
 import { GachaExperience } from '../components/gacha/GachaExperience'
-import { MachineFrame } from '../components/gacha/MachineFrame'
 import { MachineHotspots } from '../components/gacha/MachineHotspots'
 import { QuestionSheet } from '../components/gacha/QuestionSheet'
 import { useSession } from '../hooks/useSession'
@@ -12,6 +11,8 @@ import { apiMode } from '../services/api'
 import { readStorage, writeStorage } from '../services/storage'
 import videoSrc from '../assets/gacha.mp4'
 import poster from '../assets/gacha-poster.jpg'
+import idleSrc from '../assets/gacha-idle.mp4'
+import idlePoster from '../assets/gacha-idle-poster.webp'
 import '../components/gacha/machine-ui.css'
 
 const HINT_KEY = 'net:machine:hints-seen:v1'
@@ -104,17 +105,22 @@ export function GachaPage() {
       <h1 className="sr-only">
         NET 캡슐 가챠 — 손잡이로 뽑고 보관통으로 질문 넣기
       </h1>
-      <MachineFrame>
+      <GachaExperience
+        phase={draw.phase}
+        result={draw.result}
+        videoSrc={videoSrc}
+        poster={poster}
+        idleSrc={idleSrc}
+        idlePoster={idlePoster}
+        idlePaused={sheetOpen}
+        warning={draw.warning}
+        recovered={draw.recovering}
+        isMock={apiMode === 'mock'}
+        onReveal={draw.reveal}
+        onReset={draw.reset}
+      >
         {(size) => (
           <>
-            <img
-              className="machine-poster"
-              src={poster}
-              alt="NET 3D 가챠 머신. 왼쪽 아래 손잡이로 질문을 뽑고, 위쪽 캡슐 보관통으로 질문을 넣을 수 있어요."
-              fetchPriority="high"
-              width={720}
-              height={1280}
-            />
             <MachineHotspots
               size={size}
               disabled={busy}
@@ -128,7 +134,7 @@ export function GachaPage() {
             />
           </>
         )}
-      </MachineFrame>
+      </GachaExperience>
       {(error || draw.error) && (
         <div className="machine-notice">
           <ErrorNotice
@@ -160,17 +166,6 @@ export function GachaPage() {
           setSheetOpen(false)
           setSuccess(true)
         }}
-      />
-      <GachaExperience
-        phase={draw.phase}
-        result={draw.result}
-        videoSrc={videoSrc}
-        poster={poster}
-        warning={draw.warning}
-        recovered={draw.recovering}
-        isMock={apiMode === 'mock'}
-        onReveal={draw.reveal}
-        onReset={draw.reset}
       />
     </section>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Icon } from '../Icon'
 
 interface Props {
@@ -8,6 +9,8 @@ interface Props {
   onEnded: () => void
   onGlow: () => void
   onFallback: () => void
+  overlayContainer?: HTMLElement | null
+  preload?: 'auto' | 'metadata' | 'none'
 }
 
 /** 영상 재생만 담당합니다. 어떤 오류에서도 새 추첨 요청을 실행하지 않습니다. */
@@ -18,6 +21,8 @@ export function GachaVideo({
   onEnded,
   onGlow,
   onFallback,
+  overlayContainer,
+  preload = 'auto',
 }: Props) {
   const video = useRef<HTMLVideoElement>(null)
   const [failure, setFailure] = useState('')
@@ -65,50 +70,8 @@ export function GachaVideo({
     }
   }, [status, attempt])
 
-  return (
+  const overlays = (
     <>
-      <video
-        ref={video}
-        className="gacha-film"
-        src={src}
-        poster={poster}
-        muted
-        playsInline
-        preload="auto"
-        disablePictureInPicture
-        disableRemotePlayback
-        controls={false}
-        aria-hidden="true"
-        onPlaying={() => {
-          setWaiting(false)
-          lastProgress.current = Date.now()
-        }}
-        onWaiting={() => setWaiting(true)}
-        onError={() => {
-          if (status === 'playing')
-            setFailure('이 브라우저에서 영상을 불러오지 못했어요.')
-        }}
-        onEnded={() => {
-          if (status === 'playing') onEnded()
-        }}
-        onTimeUpdate={(event) => {
-          if (status !== 'playing') return
-          const element = event.currentTarget
-          if (element.currentTime > lastTime.current + 0.005) {
-            lastProgress.current = Date.now()
-            lastTime.current = element.currentTime
-          }
-          // 원본을 끝까지 재생하고 마지막 0.45초의 빛으로 카드 전환을 연결합니다.
-          if (
-            Number.isFinite(element.duration) &&
-            element.duration - element.currentTime < 0.45 &&
-            !glowStarted.current
-          ) {
-            glowStarted.current = true
-            onGlow()
-          }
-        }}
-      />
       {status === 'playing' && !failure && (
         <div className="film-status" role="status">
           {waiting ? (
@@ -149,6 +112,54 @@ export function GachaVideo({
           </div>
         </div>
       )}
+    </>
+  )
+
+  return (
+    <>
+      <video
+        ref={video}
+        className="gacha-film"
+        src={src}
+        poster={poster}
+        muted
+        playsInline
+        preload={status === 'playing' ? 'auto' : preload}
+        disablePictureInPicture
+        disableRemotePlayback
+        controls={false}
+        aria-hidden="true"
+        onPlaying={() => {
+          setWaiting(false)
+          lastProgress.current = Date.now()
+        }}
+        onWaiting={() => setWaiting(true)}
+        onError={() => {
+          if (status === 'playing')
+            setFailure('이 브라우저에서 영상을 불러오지 못했어요.')
+        }}
+        onEnded={() => {
+          if (status === 'playing') onEnded()
+        }}
+        onTimeUpdate={(event) => {
+          if (status !== 'playing') return
+          const element = event.currentTarget
+          if (element.currentTime > lastTime.current + 0.005) {
+            lastProgress.current = Date.now()
+            lastTime.current = element.currentTime
+          }
+          // 원본을 끝까지 재생하고 마지막 0.45초의 빛으로 카드 전환을 연결합니다.
+          if (
+            Number.isFinite(element.duration) &&
+            element.duration - element.currentTime < 0.45 &&
+            !glowStarted.current
+          ) {
+            glowStarted.current = true
+            onGlow()
+          }
+        }}
+      />
+      {overlayContainer ? createPortal(overlays, overlayContainer) : overlays}
     </>
   )
 }

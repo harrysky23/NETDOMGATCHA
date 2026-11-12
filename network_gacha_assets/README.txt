@@ -1,0 +1,1 @@
+NET:WORK assets - approximate transparent polygon crops from generated sprite sheet. Some original dark background/glow remains within each crop. For pixel-perfect transparent assets, regenerate each item separately. Place in frontend/public/assets/gacha/. Render question text as HTML over question_clipboard.png.

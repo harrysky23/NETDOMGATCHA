@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { fitMachine, type MachineSize } from './machineGeometry'
 
-/** 대기 이미지와 영상이 공유하는 동일한 contain 프레임. 원본은 크롭하지 않습니다. */
+/** 대기/추첨 영상과 터치 영역이 공유하는 단일 contain 프레임. 원본은 크롭하지 않습니다. */
 export function MachineFrame({
   children,
 }: {
@@ -15,8 +15,12 @@ export function MachineFrame({
     const measure = () => {
       const style = getComputedStyle(element)
       const next = fitMachine(
-        element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-        element.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
+        element.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight),
+        element.clientHeight -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom),
       )
       setSize((previous) =>
         previous.width === next.width && previous.height === next.height
