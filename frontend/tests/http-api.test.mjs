@@ -20,6 +20,42 @@ const result = {
   },
 }
 
+test('질문 목록 GET은 세션을 전달하고 최신순·익명 응답으로 정리', async () => {
+  const calls = []
+  const api = createHttpApi('/api', async (url, options) => {
+    calls.push({ url, options })
+    return Response.json([
+      { ...result.question, author_id: 'private' },
+      {
+        ...result.question,
+        id: 'new',
+        created_at: '2026-11-12T10:00:00Z',
+        author_id: 'private',
+      },
+    ])
+  })
+  const questions = await api.listQuestions(session, 'table')
+  assert.equal(calls[0].url, '/api/tables/table/questions')
+  assert.equal(calls[0].options.method ?? 'GET', 'GET')
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer server-token')
+  assert.equal(questions[0].id, 'new')
+  assert.ok(questions.every((q) => !('author_id' in q)))
+})
+
+test('질문 목록의 다른 테이블 데이터와 잘못된 응답을 거절', async () => {
+  for (const response of [
+    [{ ...result.question, table_id: 'other' }],
+    [{ ...result.question, target: 'invalid' }],
+    { questions: [result.question] },
+  ]) {
+    const api = createHttpApi('/api', async () => Response.json(response))
+    await assert.rejects(
+      api.listQuestions(session, 'table'),
+      (error) => error.code === 'INVALID_RESPONSE',
+    )
+  }
+})
+
 test('실제 추첨 POST에 세션 토큰·동일 멱등 키를 전달', async () => {
   const calls = []
   const api = createHttpApi(

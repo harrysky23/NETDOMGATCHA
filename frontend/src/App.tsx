@@ -5,6 +5,7 @@ import { GachaPage } from './pages/GachaPage'
 import { HistoryPage } from './pages/HistoryPage'
 import { AdminPage } from './pages/AdminPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { QuestionListPage } from './pages/QuestionListPage'
 
 export function App() {
   const { session } = useSession()
@@ -12,6 +13,7 @@ export function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<GachaPage />} />
+        <Route path="questions/list" element={<QuestionListPage />} />
         <Route
           path="questions"
           element={

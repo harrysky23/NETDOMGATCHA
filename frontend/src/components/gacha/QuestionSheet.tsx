@@ -6,6 +6,7 @@ import { api } from '../../services/api'
 import { TARGET_LABELS, type QuestionTarget } from '../../types'
 import { ErrorNotice } from '../Feedback'
 import { Icon } from '../Icon'
+import { HomeLink } from '../HomeLink'
 
 export function QuestionSheet({
   open,
@@ -108,6 +109,7 @@ export function QuestionSheet({
         if (event.target === dialog.current && !locked.current) onClose()
       }}
     >
+      <HomeLink overlay />
       {open && (
         <motion.section
           className="question-sheet"

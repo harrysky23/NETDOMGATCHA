@@ -4,6 +4,7 @@ import { useSession } from '../hooks/useSession'
 import { useResource } from '../hooks/useResource'
 import { api } from '../services/api'
 import { Icon } from './Icon'
+import { HomeLink } from './HomeLink'
 
 export function Layout() {
   const { selectedTableId, selectTable, pending } = useSession()
@@ -23,6 +24,7 @@ export function Layout() {
     const titles: Record<string, string> = {
       '/': '캡슐 뽑기',
       '/questions': '질문 넣기',
+      '/questions/list': '질문 목록',
       '/history': '추첨 기록',
       '/admin': '테이블 관리',
     }
@@ -36,11 +38,7 @@ export function Layout() {
         본문으로 바로가기
       </a>
       <header className="simple-header">
-        <Link className="brand" to="/" aria-label="NET 머신 홈">
-          <span className="brand-word">
-            NET<span className="brand-dot">.</span>
-          </span>
-        </Link>
+        <HomeLink />
         {admin ? (
           <Link to="/" className="simple-back">
             <Icon name="back" size={16} />
@@ -48,6 +46,17 @@ export function Layout() {
           </Link>
         ) : (
           <div className="simple-header-actions">
+            <Link
+              className="question-list-link"
+              to="/questions/list"
+              aria-current={
+                location.pathname === '/questions/list' ? 'page' : undefined
+              }
+              aria-label="현재 테이블 질문 목록 보기"
+            >
+              <Icon name="history" size={16} />
+              <span>질문함</span>
+            </Link>
             <div className="compact-table-select">
               <label className="sr-only" htmlFor="event-table">
                 참여할 테이블

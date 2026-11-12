@@ -168,6 +168,22 @@ export const mockApi: NetApi = {
     ])
     return question
   },
+  async listQuestions(session, tableId) {
+    checkAccess(session, tableId)
+    const drawnIds = new Set(
+      readDraws(tableId).map((draw) => draw.result.question.id),
+    )
+    return readQuestions(tableId)
+      .map((question) => ({
+        id: question.id,
+        table_id: question.table_id,
+        content: question.content,
+        target: question.target,
+        is_drawn: question.is_drawn || drawnIds.has(question.id),
+        created_at: question.created_at,
+      }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+  },
   async draw(session, tableId, idempotencyKey) {
     checkAccess(session, tableId)
     if (!idempotencyKey.trim())

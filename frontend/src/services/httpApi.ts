@@ -4,7 +4,8 @@ import {
   type ApiErrorCode,
   type ParticipantSession,
 } from '../types/index.ts'
-import { isDrawResult, isParticipantSession } from './validation.ts'
+import { isDrawResult, isParticipantSession, isQuestion } from './validation.ts'
+import type { Question } from '../types/index.ts'
 
 const knownCodes: ApiErrorCode[] = [
   'VALIDATION_ERROR',
@@ -85,7 +86,9 @@ export function createHttpApi(
       if (cause instanceof ApiError) throw cause
       throw new ApiError(
         'NETWORK_ERROR',
-        '서버 응답이 늦거나 연결이 끊겼어요. 다시 시도하면 같은 추첨 요청을 확인해요.',
+        path.endsWith('/draw')
+          ? '서버 응답이 늦거나 연결이 끊겼어요. 다시 시도하면 같은 추첨 요청을 확인해요.'
+          : '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.',
       )
     } finally {
       clearTimeout(timeout)
@@ -125,6 +128,33 @@ export function createHttpApi(
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    async listQuestions(session, tableId) {
+      const data = await request<unknown>(
+        `/tables/${encodeURIComponent(tableId)}/questions`,
+        session,
+      )
+      if (
+        !Array.isArray(data) ||
+        !data.every(
+          (question) => isQuestion(question) && question.table_id === tableId,
+        )
+      ) {
+        throw new ApiError(
+          'INVALID_RESPONSE',
+          '질문 목록 응답이 올바르지 않아요.',
+        )
+      }
+      return data
+        .map((question: Question) => ({
+          id: question.id,
+          table_id: question.table_id,
+          content: question.content,
+          target: question.target,
+          is_drawn: question.is_drawn,
+          created_at: question.created_at,
+        }))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    },
     async draw(session, tableId, idempotencyKey) {
       const result = await request<unknown>(
         `/tables/${encodeURIComponent(tableId)}/draw`,

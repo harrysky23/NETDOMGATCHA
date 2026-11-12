@@ -20,6 +20,32 @@ const enter = (table = 0, nickname = 'NET') =>
   mockApi.createParticipant({ nickname, table_id: TABLES[table].id })
 const hasCode = (code) => (error) => error.code === code
 
+test('질문 목록은 현재 테이블만 최신순으로 보여주고 조회로 추첨 상태를 바꾸지 않음', async () => {
+  const one = await enter()
+  const two = await enter(1)
+  const question = await mockApi.submitQuestion(one, TABLES[0].id, {
+    content: '질문함에서 확인할 질문',
+    target: 'junior',
+  })
+  const before = await mockApi.getStatus(one, TABLES[0].id)
+  const list = await mockApi.listQuestions(one, TABLES[0].id)
+  assert.deepEqual(list[0], question)
+  assert.equal(list.length, 13)
+  assert.ok(
+    list.every((q) => q.table_id === TABLES[0].id && !('author_id' in q)),
+  )
+  assert.deepEqual(await mockApi.getStatus(one, TABLES[0].id), before)
+  assert.equal((await mockApi.listQuestions(two, TABLES[1].id)).length, 12)
+  await assert.rejects(
+    mockApi.listQuestions(one, TABLES[1].id),
+    hasCode('TABLE_ACCESS_DENIED'),
+  )
+  const draw = await mockApi.draw(one, TABLES[0].id, 'list-test')
+  const updated = await mockApi.listQuestions(one, TABLES[0].id)
+  assert.equal(updated.find((q) => q.id === draw.question.id).is_drawn, true)
+  assert.equal(updated.filter((q) => q.is_drawn).length, 1)
+})
+
 test('초기 3개 테이블과 독립적인 반환값', async () => {
   const tables = await mockApi.listTables()
   assert.deepEqual(

@@ -6,6 +6,7 @@ import type { GachaPhase } from '../../hooks/useGachaDraw'
 import { GachaVideo } from './GachaVideo'
 import { QuestionResultCard } from './QuestionResultCard'
 import { MachineFrame } from './MachineFrame'
+import { HomeLink } from '../HomeLink'
 
 interface Props {
   phase: GachaPhase
@@ -72,6 +73,7 @@ export function GachaExperience({
         if (phase === 'REVEAL') onReset()
       }}
     >
+      <HomeLink overlay />
       <div
         className={`gacha-cinema machine-cinema ${phase === 'REVEAL' ? 'is-revealed' : ''}`}
       >

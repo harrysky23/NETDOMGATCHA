@@ -24,6 +24,10 @@ export interface NetApi {
     tableId: string,
     input: SubmitQuestionInput,
   ): Promise<Question>
+  listQuestions(
+    session: ParticipantSession,
+    tableId: string,
+  ): Promise<Question[]>
   draw(
     session: ParticipantSession,
     tableId: string,
