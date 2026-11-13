@@ -4,6 +4,7 @@ import {
   type StickerId,
   type StickerPosition,
 } from '../types/index.ts'
+import { AVAILABLE_STICKER_IDS } from '../generated/stickerCatalog.ts'
 
 export const DEFAULT_TARGET_BADGE: StickerPosition = {
   x: 0.77,
@@ -45,12 +46,12 @@ export function isDecoration(value: unknown): value is QuestionDecoration {
 
 /** Fisher–Yates: 화면 재렌더/입력 중에는 다시 호출하지 않습니다. */
 export function pickStickerChoices(): StickerId[] {
-  const items = [...STICKER_IDS]
+  const items: StickerId[] = [...AVAILABLE_STICKER_IDS]
   for (let i = items.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
     ;[items[i], items[j]] = [items[j], items[i]]
   }
-  return items.slice(0, Math.random() < 0.5 ? 2 : 3)
+  return items.slice(0, 2)
 }
 
 export function paperPosition(

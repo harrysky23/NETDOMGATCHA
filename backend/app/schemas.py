@@ -1,4 +1,6 @@
 from typing import Annotated, Literal
+import json
+from pathlib import Path
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, StringConstraints, UUID4, Field, field_validator
 
@@ -28,7 +30,8 @@ class TableChange(BaseModel):
     table_id: UUID
 
 
-StickerId = Literal['heart-envelope', 'diamond', 'strawberry-milk', 'net-ticket', 'question-mark', 'stars', 'pixel-cursor', 'ribbon-star', 'clover-cat']
+STICKER_IDS = frozenset(json.loads(Path(__file__).with_name('sticker_manifest.json').read_text(encoding='utf-8')))
+StickerId = Annotated[str, StringConstraints(strict=True, min_length=1, max_length=64)]
 
 
 class StickerPosition(BaseModel):
@@ -40,6 +43,13 @@ class StickerPosition(BaseModel):
 
 class PlacedSticker(StickerPosition):
     id: StickerId
+
+    @field_validator('id')
+    @classmethod
+    def registered_sticker(cls, value):
+        if value not in STICKER_IDS:
+            raise ValueError('등록된 스티커만 사용할 수 있습니다.')
+        return value
 
 
 class QuestionDecoration(BaseModel):

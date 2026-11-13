@@ -11,6 +11,14 @@
 - 대기/추첨 MP4, 결과 카드, 영상 오류 대체 UI, reduced-motion 지원.
 - FastAPI 참가자 세션, 테이블 접근 검증, PostgreSQL 원자적 추첨, 멱등 키와 최근 결과 복구.
 
+## 다꾸 스티커 추가
+
+`asset/scrapbooks/다꾸스티커/`에 PNG, JPG 또는 WebP 이미지를 추가하세요. 코드에서 이미지 import나 스티커 이름 목록을 수정할 필요가 없습니다. `frontend`에서 `npm run dev` 또는 `npm run build`를 실행하면 폴더를 읽어 이미지 경로와 서버 검증 목록을 함께 생성합니다. 실행 중 파일을 추가했다면 개발 서버를 재시작하세요. 폴더에 있는 스티커 중 중복 없이 2개를 랜덤으로 보여줍니다(이미지가 2개 미만이면 있는 만큼 표시).
+
+배포 사이트에는 원본 이미지를 GitHub에 올린 후 **프론트와 백엔드를 함께 재배포**해야 반영됩니다. Railway의 Docker 빌드에도 같은 자동 수집 단계가 포함되어 있습니다. 현재 서비스의 GitHub 자동 배포가 비활성화되어 있다면 Check for updates 또는 수동 배포가 필요합니다. 기존 스티커 ID는 계속 지원하며, 새 파일은 내용 해시로 ID를 생성하므로 이름만 바꿔도 유지됩니다. 이미 질문에 사용한 새 에셋을 삭제하거나 교체하면 이전 질문에서 해당 스티커를 표시할 수 없으므로 원본을 보관하세요. 브라우저 업로드나 외부 URL은 받지 않습니다.
+
+생성되는 파일: `frontend/src/generated/stickerCatalog.ts`, `backend/app/sticker_manifest.json`, `frontend/public/stickers/`(빌드 시 복사, Git 제외). 백엔드만 따로 실행할 때는 에셋 변경 후 `cd frontend && npm run sync:stickers`를 먼저 실행하고 백엔드를 재시작하세요.
+
 ## 하루 행사 배포: Railway + Supabase
 
 Vercel은 필수가 아닙니다. 루트 `Dockerfile`은 React를 HTTP 모드로 빌드하고 FastAPI가 정적 파일을 함께 제공합니다.

@@ -8,6 +8,7 @@ import {
 import { mockApi, TABLES } from '../src/services/mockApi.ts'
 import { createHttpApi } from '../src/services/httpApi.ts'
 import { isDrawResult } from '../src/services/validation.ts'
+import { AVAILABLE_STICKER_IDS, EXTRA_STICKER_CATALOG } from '../src/generated/stickerCatalog.ts'
 
 const decoration = {
   version: 1,
@@ -43,9 +44,18 @@ test('꾸미기 데이터는 허용된 스티커 3개 이하·유한한 편지�
     assert.equal(isDecoration(bad), false)
   for (let i = 0; i < 30; i++) {
     const choices = pickStickerChoices()
-    assert.ok(choices.length === 2 || choices.length === 3)
+    assert.equal(choices.length, Math.min(2, AVAILABLE_STICKER_IDS.length))
     assert.equal(new Set(choices).size, choices.length)
+    assert.ok(choices.every(id => AVAILABLE_STICKER_IDS.includes(id)))
   }
+})
+
+test('자동 수집한 새 스티커도 검증·저장 데이터로 사용하고 기존 스티커는 유지', () => {
+  for (const id of Object.keys(EXTRA_STICKER_CATALOG)) {
+    assert.ok(AVAILABLE_STICKER_IDS.includes(id))
+    assert.ok(isDecoration({ ...decoration, stickers: [{ id, x: .5, y: .5, rotation: 0 }] }))
+  }
+  assert.ok(isDecoration({ ...decoration, stickers: [{ id: 'diamond', x: .5, y: .5, rotation: 0 }] }))
 })
 
 test('모바일·데스크톱에서 같은 위치로 드롭하고 편지지 밖/숨긴 영역은 거절', () => {

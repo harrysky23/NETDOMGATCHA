@@ -12,7 +12,7 @@ def attach_frontend(app: FastAPI, directory: Path):
     if not index.is_file():
         return  # 프론트를 별도 실행하는 로컬/API 전용 배포도 지원합니다.
 
-    for name in ('assets', 'fonts'):
+    for name in ('assets', 'fonts', 'stickers'):
         folder = root / name
         if folder.is_dir():
             app.mount('/'+name, StaticFiles(directory=folder), name='frontend-'+name)

@@ -1,3 +1,5 @@
+import { EXTRA_STICKER_CATALOG } from '../generated/stickerCatalog.ts'
+
 export type QuestionTarget = 'senior' | 'junior' | 'all'
 
 /** 브라우저 식별용 정보이며 인증 자격 증명이 아닙니다. */
@@ -40,6 +42,7 @@ export const STICKER_IDS = [
   'pixel-cursor',
   'ribbon-star',
   'clover-cat',
+  ...Object.keys(EXTRA_STICKER_CATALOG) as (keyof typeof EXTRA_STICKER_CATALOG)[],
 ] as const
 export type StickerId = (typeof STICKER_IDS)[number]
 export interface StickerPosition {

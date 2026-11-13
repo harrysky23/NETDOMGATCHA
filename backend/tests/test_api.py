@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from app.main import create_app
 from app.models import Participant, Question
+from app.schemas import STICKER_IDS
 
 
 @pytest.fixture
@@ -122,6 +123,20 @@ def test_decoration_saved_shared_drawn_and_recovered(client):
     with client.app.state.engine.connect() as db:
         assert db.execute(select(Question.decoration)).scalar_one() == decoration
     assert post_question(client, author, headers).json()['decoration'] is None
+
+
+def test_generated_sticker_saved_and_drawn(client):
+    session, headers, body = entry(client)
+    generated = [sticker for sticker in STICKER_IDS if sticker.startswith('asset-')]
+    assert generated, '새 다꾸 에셋이 서버 목록에 포함되어야 합니다.'
+    decoration = {'version': 1, 'paper': 'lined', 'stickers': [
+        {'id': generated[0], 'x': .5, 'y': .5, 'rotation': 0}]}
+    created = post_question(client, session, headers, decoration=decoration)
+    assert created.status_code == 201, created.text
+    drawn = client.post('/api/tables/'+body['table_id']+'/draw', headers={**headers, 'Idempotency-Key': 'new-asset'})
+    assert drawn.json()['question']['decoration']['stickers'] == decoration['stickers']
+    decoration['stickers'][0]['id'] = 'asset-'+'0'*24
+    assert post_question(client, session, headers, decoration=decoration).status_code == 422
 
 
 @pytest.mark.parametrize('changes', [{'id':'https://evil/image.png'}, {'x':-.1}, {'y':2}, {'rotation':21}, {'x':'0.5'}, {'x':True}])

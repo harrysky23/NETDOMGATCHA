@@ -1,4 +1,5 @@
 import type { StickerId } from '../../../types'
+import { EXTRA_STICKER_CATALOG } from '../../../generated/stickerCatalog'
 import heart from '../../../assets/scrapbook/stickers/heart-envelope.png'
 import diamond from '../../../assets/scrapbook/stickers/diamond.png'
 import milk from '../../../assets/scrapbook/stickers/strawberry-milk.png'
@@ -19,4 +20,5 @@ export const stickerCatalog: Record<StickerId, { src: string; label: string }> =
     'pixel-cursor': { src: cursor, label: '픽셀 커서' },
     'ribbon-star': { src: ribbon, label: '리본 별' },
     'clover-cat': { src: cat, label: '클로버 고양이' },
+    ...EXTRA_STICKER_CATALOG,
   }

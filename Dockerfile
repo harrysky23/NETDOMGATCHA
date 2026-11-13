@@ -4,6 +4,7 @@ WORKDIR /build/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./
+COPY asset/scrapbooks/ /build/asset/scrapbooks/
 ENV VITE_API_MODE=http VITE_API_BASE_URL=/api
 RUN npm run build
 
@@ -13,6 +14,7 @@ WORKDIR /app/backend
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/app ./app
+COPY --from=frontend /build/backend/app/sticker_manifest.json ./app/sticker_manifest.json
 COPY supabase/migrations /app/supabase/migrations
 COPY --from=frontend /build/frontend/dist /app/frontend/dist
 RUN useradd --create-home --uid 10001 netapp
