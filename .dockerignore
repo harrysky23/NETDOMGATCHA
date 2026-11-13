@@ -1,0 +1,15 @@
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/__pycache__
+**/.pytest_cache
+**/.venv
+**/*.tsbuildinfo
+asset
+frontend/*preview*
+frontend/*qa*
+backend/tests
+frontend/tests
+.DS_Store

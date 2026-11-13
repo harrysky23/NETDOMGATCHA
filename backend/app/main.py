@@ -3,6 +3,7 @@ from datetime import timedelta, timezone
 import hashlib
 import json
 import os
+from pathlib import Path
 import secrets
 from typing import Annotated
 from uuid import UUID
@@ -15,6 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+from .frontend import attach_frontend
 from .models import Base, DrawHistory, EventTable, Participant, Question, now
 from .schemas import EntryInput, QuestionInput, TableChange, TableCreateInput, TableNameInput, VisitorInput
 
@@ -82,7 +84,7 @@ def draw_public(db, draw):
             'question': question_public(db.get(Question, draw.question_id))}
 
 
-def create_app(database_url=None, *, initialize=False):
+def create_app(database_url=None, *, initialize=False, frontend_dir=None):
     url = database_url or os.getenv('DATABASE_URL')
     if url and url.startswith('postgresql://'):
         url = url.replace('postgresql://', 'postgresql+psycopg://', 1)
@@ -247,6 +249,8 @@ def create_app(database_url=None, *, initialize=False):
                       DrawHistory.drawn_by == p.id).order_by(DrawHistory.drawn_at.desc()).limit(1))
         return draw_public(db, d) if d else None
 
+    dist = Path(frontend_dir or os.getenv('FRONTEND_DIST', Path(__file__).resolve().parents[2] / 'frontend' / 'dist'))
+    attach_frontend(app, dist)
     return app
 
 

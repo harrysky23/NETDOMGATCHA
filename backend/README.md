@@ -1,7 +1,18 @@
-# Backend — Phase 2 준비용 디렉터리
+# NET FastAPI
 
-현재 FastAPI 앱, 의존성, DB 연결, API는 구현하지 않았습니다. 폴더 구조와 환경변수 명세만 준비했습니다. 실행·배포 가능한 서버가 아닙니다.
+참가자 세션, 그룹 추가/이름 변경, 테이블별 참가자·질문 조회, 질문 등록·추첨·이력·복구를 제공합니다. 세션 토큰은 서버가 발급하고 해시로 저장합니다. 방문자 ID는 인증 토큰으로 사용하지 않습니다.
 
-다음 단계에서 `app/main.py`, 인증, Pydantic 검증, CORS, 요청 제한, 테이블 접근 검증 및 PostgreSQL 트랜잭션 추첨을 구현합니다. 참가자 테이블 변경은 `PATCH /api/participants/me/table`로 설계합니다. `/api/health`는 실제 DB 연결 상태를 검사하고 장애 시 503을 반환하도록 구현해야 합니다.
+로컬 실행:
 
-시크릿은 이 폴더의 `.env` 또는 Render 환경변수에만 설정합니다. `.env.example`은 값 형식 예시입니다. 실제 시크릿은 커밋하지 않습니다. 전체 배포·운영 계획은 루트 README를 참고하세요.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+# .env.example을 참고해 보호된 .env에 DATABASE_URL을 설정합니다.
+python -m app.migrate
+uvicorn app.main:app --reload --env-file .env --host 127.0.0.1 --port 8000
+```
+
+운영은 저장소 루트 `Dockerfile`을 사용합니다. React 빌드 결과를 같은 도메인에서 제공합니다. `DATABASE_URL`은 서버에만 설정하고 동일 출처 배포의 `CORS_ORIGINS`는 빈 배열로 둡니다. `/api/health`가 DB 연결을 검사합니다.
+
+운영 DB는 [SQL 마이그레이션](../supabase/migrations/README.md)을 먼저 적용해야 합니다. 서버 시작 때 DB를 자동으로 초기화하지 않습니다. 상세 배포/행사 점검은 [루트 README](../README.md)를 참고하세요.

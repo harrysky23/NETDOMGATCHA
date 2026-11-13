@@ -31,7 +31,7 @@ export function createHttpApi(
     allowNull = false,
   ): Promise<T> {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 20_000)
+    const timeout = setTimeout(() => controller.abort(), 75_000)
     try {
       const response = await fetcher(`${base}${path}`, {
         ...init,
