@@ -5,12 +5,16 @@ import { useResource } from '../hooks/useResource'
 import { api } from '../services/api'
 import { Icon } from './Icon'
 import { HomeLink } from './HomeLink'
+import { GroupTableDialog } from './tables/GroupTableDialog'
+import { TableMembers } from './tables/TableMembers'
+import './tables/group-tables.css'
 
 export function Layout() {
   const { selectedTableId, selectTable, pending } = useSession()
   const location = useLocation()
   const load = useCallback(() => api.listTables(), [])
   const tables = useResource(load)
+  const [manageOpen, setManageOpen] = useState(false)
   const [error, setError] = useState('')
   const content = useRef<HTMLElement>(null)
   const admin = location.pathname === '/admin'
@@ -34,7 +38,9 @@ export function Layout() {
   }, [location.pathname, tables.refresh])
 
   return (
-    <div className="app-shell simple-shell machine-shell">
+    <div
+      className={`app-shell simple-shell machine-shell ${selectedTableId && !admin ? 'has-table-members' : ''}`}
+    >
       <a className="skip-link" href="#main-content">
         본문으로 바로가기
       </a>
@@ -90,9 +96,36 @@ export function Layout() {
                 ))}
               </select>
             </div>
+            <button
+              type="button"
+              className="group-manage-trigger"
+              aria-label="그룹 테이블 추가 또는 이름 변경"
+              onClick={() => setManageOpen(true)}
+            >
+              +
+            </button>
           </div>
         )}
       </header>
+      {selectedTableId && !admin && <TableMembers />}
+      <GroupTableDialog
+        open={manageOpen}
+        current={tables.data?.find((t) => t.id === selectedTableId)}
+        onClose={() => setManageOpen(false)}
+        onSaved={(table, created) => {
+          setManageOpen(false)
+          void (async () => {
+            await tables.refresh()
+            if (created) await selectTable(table.id)
+          })().catch((cause) =>
+            setError(
+              cause instanceof Error
+                ? cause.message
+                : '그룹은 저장했지만 입장하지 못했어요. 테이블을 다시 선택해 주세요.',
+            ),
+          )
+        }}
+      />
       {(error || tables.error) && (
         <div className="simple-header-error" role="alert">
           <span>{error || tables.error}</span>

@@ -62,3 +62,25 @@ class QuestionInput(VisitorInput):
     target: Literal['senior', 'junior', 'all']
 
     decoration: QuestionDecoration | None = None
+
+
+class TableNameInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    name: Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=30)]
+
+    @field_validator('name')
+    @classmethod
+    def clean_table_name(cls, value):
+        if any(ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError('그룹 이름에는 제어 문자를 사용할 수 없습니다.')
+        return value
+
+
+class TableCreateInput(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    name: Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=30)] | None = None
+
+    @field_validator('name')
+    @classmethod
+    def clean_table_name(cls, value):
+        return TableNameInput.clean_table_name(value) if value is not None else value

@@ -1,4 +1,4 @@
-import type { EventTable } from '../types/index.ts'
+import { ApiError, type EventTable } from '../types/index.ts'
 import { readStorage, writeStorage } from './storage.ts'
 
 export const INITIAL_TABLES: EventTable[] = Array.from(
@@ -31,14 +31,43 @@ export function getMockTables(): EventTable[] {
   return (saved ?? INITIAL_TABLES).map((table) => ({ ...table }))
 }
 
-// 관리자 서비스에서만 호출합니다. 실제 권한·동시성 검증은 서버에서 구현해야 합니다.
-export function appendMockTable(): EventTable {
+export function normalizeTableName(value: string) {
+  const name = value.trim()
+  if (
+    !name ||
+    Array.from(name).length > 30 ||
+    /[\u0000-\u001f\u007f]/u.test(name)
+  )
+    throw new ApiError(
+      'VALIDATION_ERROR',
+      '그룹 이름은 1–30자로 입력해 주세요.',
+    )
+  return name
+}
+
+export function renameMockTable(id: string, value: string): EventTable {
+  const tables = getMockTables()
+  const table = tables.find((t) => t.id === id)
+  if (!table)
+    throw new ApiError('TABLE_NOT_FOUND', '존재하지 않는 테이블이에요.')
+  const renamed = { ...table, name: normalizeTableName(value) }
+  writeStorage(
+    'net:mock:tables:v1',
+    tables.map((t) => (t.id === id ? renamed : t)),
+  )
+  return renamed
+}
+
+export function appendMockTable(name?: string): EventTable {
   const tables = getMockTables()
   const number = Math.max(...tables.map((table) => table.number)) + 1
   const table = {
     id: crypto.randomUUID(),
     number,
-    name: `TABLE ${String(number).padStart(2, '0')}`,
+    name:
+      name === undefined
+        ? `TABLE ${String(number).padStart(2, '0')}`
+        : normalizeTableName(name),
   }
   writeStorage('net:mock:tables:v1', [...tables, table])
   return table

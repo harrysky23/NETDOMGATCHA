@@ -144,3 +144,40 @@ def test_bad_target_badge_position_rejected(client):
     session, headers, _ = entry(client)
     decoration = {'version':1, 'paper':'lined', 'stickers':[], 'target_badge':{'x':2,'y':.3,'rotation':0}}
     assert post_question(client, session, headers, decoration=decoration).status_code == 422
+
+
+def test_anyone_can_create_rename_group_and_preserve_questions(client):
+    created = client.post('/api/tables', json={'name':'  친구 모임  '})
+    assert created.status_code == 201
+    table = created.json()
+    assert table['number'] == 4 and table['name'] == '친구 모임'
+    author, headers, _ = entry(client, table=table['id'])
+    question = post_question(client, author, headers).json()
+    url = '/api/tables/'+table['id']
+    draw = client.post(url+'/draw',headers={**headers,'Idempotency-Key':'rename-safe'}).json()
+    renamed = client.patch(url, json={'name':'새 이름'})
+    assert renamed.status_code == 200
+    assert renamed.json() == {**table,'name':'새 이름'}
+    assert client.get(url+'/questions', headers=headers).json()[0]['id'] == question['id']
+    assert client.get(url+'/history', headers=headers).json()[0] == draw
+    assert client.post('/api/tables',json={}).json()['name'] == 'TABLE 05'
+    for name in ['', '   ', '가'*31, '이름\x00', 123]:
+        assert client.post('/api/tables',json={'name':name}).status_code == 422
+        assert client.patch(url,json={'name':name}).status_code == 422
+
+
+def test_members_follow_table_and_nickname_without_exposing_identity(client):
+    one, h1, body = entry(client,'동명이인')
+    two, h2, b2 = entry(client,'동명이인')
+    url='/api/tables/'+body['table_id']+'/participants'
+    members=client.get(url,headers=h1).json()
+    assert len(members)==2 and all(set(p)=={'id','nickname'} for p in members)
+    assert client.get(url).status_code==401
+    changed=client.patch('/api/participants/me/profile',json={'visitorId':b2['visitorId'],'nickname':'새 이름'},headers=h2)
+    assert changed.status_code==200
+    assert any(p['nickname']=='새 이름' for p in client.get(url,headers=h1).json())
+    other=client.get('/api/tables').json()[1]['id']
+    assert client.get('/api/tables/'+other+'/participants',headers=h1).status_code==403
+    client.patch('/api/participants/me/table',json={'table_id':other},headers=h2)
+    assert [p['id'] for p in client.get(url,headers=h1).json()]==[one['participant']['id']]
+    assert [p['id'] for p in client.get('/api/tables/'+other+'/participants',headers=h2).json()]==[two['participant']['id']]

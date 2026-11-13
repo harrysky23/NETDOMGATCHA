@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from .models import Base, DrawHistory, EventTable, Participant, Question, now
-from .schemas import EntryInput, QuestionInput, TableChange, VisitorInput
+from .schemas import EntryInput, QuestionInput, TableChange, TableCreateInput, TableNameInput, VisitorInput
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -129,6 +129,30 @@ def create_app(database_url=None, *, initialize=False):
     def tables(db: DB):
         return [{'id': t.id, 'number': t.number, 'name': t.name}
                 for t in db.scalars(select(EventTable).order_by(EventTable.number))]
+
+    @app.post('/api/tables', status_code=201)
+    def create_table(body: TableCreateInput, db: DB):
+        # 새 테이블 번호는 PostgreSQL 트랜잭션 잠금 안에서 발급합니다.
+        if db.bind.dialect.name == 'postgresql':
+            db.execute(text('SELECT pg_advisory_xact_lock(78264031)'))
+        number = (db.scalar(select(func.max(EventTable.number))) or 0) + 1
+        table = EventTable(number=number, name=body.name or f'TABLE {number:02d}')
+        db.add(table)
+        db.commit()
+        return {'id':table.id, 'number':table.number, 'name':table.name}
+
+    @app.patch('/api/tables/{table_id}')
+    def rename_table(table_id: UUID, body: TableNameInput, db: DB):
+        table = table_for(db, table_id)
+        table.name = body.name
+        db.commit()
+        return {'id':table.id, 'number':table.number, 'name':table.name}
+
+    @app.get('/api/tables/{table_id}/participants')
+    def table_participants(table_id: UUID, db: DB, credentials: Credentials):
+        access(db, credentials, table_id)
+        return [{'id':p.id, 'nickname':p.nickname} for p in db.scalars(select(Participant).where(
+            Participant.table_id == table_id, Participant.token_expires_at > now()).order_by(Participant.created_at, Participant.id))]
 
     @app.post('/api/participants', status_code=201)
     def enter(body: EntryInput, db: DB):

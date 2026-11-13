@@ -3,6 +3,7 @@ import {
   ApiError,
   type EventTable,
   type ParticipantSession,
+  type Participant,
   type Question,
   type QuestionTarget,
   type DrawResult,
@@ -10,8 +11,41 @@ import {
 import { readStorage, writeStorage } from './storage.ts'
 import { isDecoration } from './questionDecoration.ts'
 import { isDrawResult } from './validation.ts'
-import { getMockTables, INITIAL_TABLES } from './tableStore.ts'
+import {
+  appendMockTable,
+  renameMockTable,
+  getMockTables,
+  INITIAL_TABLES,
+} from './tableStore.ts'
 import { isVisitorId, normalizeNickname } from './visitorProfile.ts'
+
+function mockMembers(): Participant[] {
+  return (
+    readStorage(
+      'net:mock:participants:v1',
+      (v): v is Participant[] =>
+        Array.isArray(v) &&
+        v.every(
+          (p) =>
+            p &&
+            typeof p.id === 'string' &&
+            typeof p.nickname === 'string' &&
+            typeof p.table_id === 'string',
+        ),
+    ) ?? []
+  )
+}
+function rememberParticipant(p: Participant) {
+  const people = mockMembers()
+  const saved = people.find((m) => m.id === p.id)
+  if (saved && JSON.stringify(saved) === JSON.stringify(p)) return
+  writeStorage(
+    'net:mock:participants:v1',
+    saved
+      ? people.map((m) => (m.id === p.id ? { ...p } : m))
+      : [...people, { ...p }],
+  )
+}
 
 interface StoredQuestion extends Question {
   author_id?: string
@@ -128,8 +162,24 @@ export const mockApi: NetApi = {
   async listTables() {
     return getMockTables()
   },
+  async createTable(name) {
+    return appendMockTable(name)
+  },
+  async renameTable(tableId, name) {
+    return renameMockTable(tableId, name)
+  },
+  async listParticipants(session, tableId) {
+    checkAccess(session, tableId)
+    // 이 기능 도입 전 저장된 세션도 명단에 한 번 연결합니다.
+    if (!mockMembers().some((p) => p.id === session.participant.id))
+      rememberParticipant(session.participant)
+    return mockMembers()
+      .filter((p) => p.table_id === tableId)
+      .map((p) => ({ id: p.id, nickname: p.nickname }))
+  },
   async getParticipant(session) {
     checkAccess(session, session.participant.table_id)
+    rememberParticipant(session.participant)
     return { ...session, participant: { ...session.participant } }
   },
   async createParticipant({ nickname, table_id, visitorId }) {
@@ -137,7 +187,7 @@ export const mockApi: NetApi = {
     const trimmed = normalizeNickname(nickname)
     if (!isVisitorId(visitorId))
       throw new ApiError('VALIDATION_ERROR', '방문자 ID가 올바르지 않아요.')
-    return {
+    const next: ParticipantSession = {
       participant: {
         id: crypto.randomUUID(),
         nickname: trimmed,
@@ -146,6 +196,8 @@ export const mockApi: NetApi = {
       },
       token: `mock-${crypto.randomUUID()}`,
     }
+    rememberParticipant(next.participant)
+    return next
   },
   async updateParticipantProfile(session, profile) {
     checkAccess(session, session.participant.table_id)
@@ -156,7 +208,7 @@ export const mockApi: NetApi = {
         session.participant.visitor_id !== profile.visitorId)
     )
       throw new ApiError('UNAUTHORIZED', '다른 방문자 정보로 변경할 수 없어요.')
-    return {
+    const next = {
       ...session,
       participant: {
         ...session.participant,
@@ -164,14 +216,18 @@ export const mockApi: NetApi = {
         nickname,
       },
     }
+    rememberParticipant(next.participant)
+    return next
   },
   async changeTable(session, tableId) {
     checkAccess(session, session.participant.table_id)
     tableById(tableId)
-    return {
+    const next = {
       ...session,
       participant: { ...session.participant, table_id: tableId },
     }
+    rememberParticipant(next.participant)
+    return next
   },
   async getStatus(session, tableId) {
     checkAccess(session, tableId)

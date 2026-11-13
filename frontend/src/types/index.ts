@@ -12,6 +12,11 @@ export interface EventTable {
   name: string
 }
 
+export interface TableMember {
+  id: string
+  nickname: string
+}
+
 export interface Participant {
   id: string
   nickname: string

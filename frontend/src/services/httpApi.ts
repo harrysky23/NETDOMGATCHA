@@ -3,6 +3,7 @@ import {
   ApiError,
   type ApiErrorCode,
   type ParticipantSession,
+  type TableMember,
 } from '../types/index.ts'
 import { isDrawResult, isParticipantSession, isQuestion } from './validation.ts'
 import type { Question } from '../types/index.ts'
@@ -111,6 +112,34 @@ export function createHttpApi(
 
   return {
     listTables: () => request('/tables'),
+    createTable: (name) =>
+      request('/tables', undefined, {
+        method: 'POST',
+        body: JSON.stringify(name === undefined ? {} : { name }),
+      }),
+    renameTable: (tableId, name) =>
+      request(`/tables/${encodeURIComponent(tableId)}`, undefined, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
+    async listParticipants(session, tableId) {
+      const data = await request<unknown>(
+        `/tables/${encodeURIComponent(tableId)}/participants`,
+        session,
+      )
+      if (
+        !Array.isArray(data) ||
+        !data.every(
+          (p) =>
+            p && typeof p.id === 'string' && typeof p.nickname === 'string',
+        )
+      )
+        throw new ApiError(
+          'INVALID_RESPONSE',
+          '참가자 목록을 확인하지 못했어요.',
+        )
+      return data.map((p: TableMember) => ({ id: p.id, nickname: p.nickname }))
+    },
     getParticipant: (session) =>
       sessionRequest('/participants/me', session, {}),
     createParticipant: (input) =>

@@ -61,3 +61,19 @@ def test_migration_repeated_legacy_preservation_and_20_concurrent_draws():
             repeated=list(pool.map(retry,range(20)))
         assert all(result==repeated[0] for result in repeated)
         assert len(client.get(f'/api/tables/{table_id}/history',headers=headers).json())==21
+
+
+@pytest.mark.skipif(not os.getenv('NET_TEST_DATABASE_URL'), reason='임시 PostgreSQL 연결 정보 없음')
+def test_20_concurrent_public_table_creations_have_unique_numbers():
+    url=os.environ['NET_TEST_DATABASE_URL']
+    parsed=make_url(url)
+    assert parsed.database=='net_test' and parsed.host in ('127.0.0.1','localhost')
+    with TestClient(create_app(url)) as client:
+        def create(i):
+            response=client.post('/api/tables',json={'name':f'그룹 {i}'})
+            assert response.status_code==201,response.text
+            return response.json()
+        with ThreadPoolExecutor(max_workers=20) as pool:
+            created=list(pool.map(create,range(20)))
+        assert len({t['id'] for t in created})==20
+        assert len({t['number'] for t in created})==20

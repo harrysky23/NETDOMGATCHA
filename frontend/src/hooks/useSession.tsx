@@ -145,13 +145,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           next.participant.visitor_id !== currentProfile.visitorId
         )
           next = null
-      if (next) {
-        try { next = await api.getParticipant(next) }
-        catch (cause) {
-          if (cause instanceof ApiError && cause.code === 'UNAUTHORIZED') next = null
-          else throw cause
+        if (next) {
+          try {
+            next = await api.getParticipant(next)
+          } catch (cause) {
+            if (cause instanceof ApiError && cause.code === 'UNAUTHORIZED')
+              next = null
+            else throw cause
+          }
         }
-      }
         if (!next)
           next = await api.createParticipant({
             ...currentProfile,
@@ -194,12 +196,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const selectTable = useCallback(
     async (tableId: string) => {
-      if (sessionRef.current) {
-        await ensureParticipant(tableId)
-        return
-      }
-      writeStorage(TABLE_KEY, tableId)
-      setSelectedTableId(tableId)
+      await ensureParticipant(tableId)
     },
     [ensureParticipant],
   )
