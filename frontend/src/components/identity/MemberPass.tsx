@@ -53,9 +53,9 @@ export function MemberPass({
             <span className="member-portrait-caption">MEMBER</span>
           </div>
           <p className="member-photo-note">
-            우리의 이야기가
+            넷 제 2회 
             <br />
-            이어지는 밤
+            OB 총회
           </p>
         </div>
         <div className="member-information">
